@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apex Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══ TOKENS ════════════════════════════════════════════ */
+:root {
+  --bg:           #0B0B0E;
+  --surface:      #111116;
+  --surface-2:    #18181F;
+  --border:       rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.12);
+  --gold:         #C9A96E;
+  --gold-dim:     #8A7150;
+  --gold-glow:    rgba(201,169,110,0.12);
+  --text:         #E8E8EC;
+  --text-dim:     #6B6B78;
+  --text-muted:   #3E3E4A;
+  --green:        #4ADE80;
+  --red:          #F87171;
+  --blue:         #60A5FA;
+  --amber:        #FBBF24;
+  --radius:       8px;
+  --radius-lg:    14px;
+}
+
+/* ═══ RESET ═════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+
+body {
+  font-family: 'Geist', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* ═══ SIDEBAR ════════════════════════════════════════════ */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0;
+  overflow: hidden;
+  animation: fadeSlideIn 0.5s ease both;
+}
+
+.logo {
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-mark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.logo-sub {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-dim);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+
+.nav-item.active {
+  background: var(--gold-glow);
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+.nav-item.active .nav-badge {
+  background: var(--gold-glow);
+  color: var(--gold);
+}
+
+.sidebar-footer {
+  padding: 20px 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.run-btn {
+  width: 100%;
+  background: var(--gold);
+  color: #0B0B0E;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.run-btn:hover {
+  background: #D9B97E;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(201,169,110,0.3);
+}
+
+.run-btn:active { transform: translateY(0); }
+
+/* ═══ MAIN ═══════════════════════════════════════════════ */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeSlideIn 0.5s 0.1s ease both;
+}
+
+/* ─── Header ──────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.header-title span {
+  color: var(--gold);
+  font-style: italic;
+}
+
+.stats-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.stat {
+  text-align: right;
+}
+
+.stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text);
+}
+
+.stat-label {
+  font-size: 10px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
+
+/* ─── Tabs / filter bar ─────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-family: 'Geist', sans-serif;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+.filter-btn.active {
+  background: var(--gold-glow);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+.filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.filter-spacer { flex: 1; }
+
+.search-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: 'Geist', sans-serif;
+  color: var(--text);
+  outline: none;
+  width: 200px;
+  transition: border-color 0.15s;
+}
+.search-box::placeholder { color: var(--text-muted); }
+.search-box:focus { border-color: var(--gold-dim); }
+
+/* ─── Content ─────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+}
+
+/* ─── Job List ─────────────────────────────────────────── */
+.job-list {
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.job-list::-webkit-scrollbar { width: 4px; }
+.job-list::-webkit-scrollbar-track { background: transparent; }
+.job-list::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 2px; }
+
+.job-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+  animation: cardIn 0.3s ease both;
+}
+
+.job-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  border-radius: 3px 0 0 3px;
+  transition: background 0.2s;
+}
+
+.job-card:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+  transform: translateX(2px);
+}
+
+.job-card.selected {
+  border-color: var(--gold-dim);
+  background: var(--surface-2);
+}
+
+.job-card.selected::before { background: var(--gold); }
+
+.job-card.score-high::before { background: var(--green); }
+.job-card.score-mid::before { background: var(--amber); }
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.card-company {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.score-badge {
+  flex-shrink: 0;
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+}
+
+.score-high  { color: var(--green);  border-color: rgba(74,222,128,0.25);  background: rgba(74,222,128,0.06); }
+.score-mid   { color: var(--amber);  border-color: rgba(251,191,36,0.25);  background: rgba(251,191,36,0.06); }
+.score-low   { color: var(--text-dim); border-color: var(--border);       background: transparent; }
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.meta-chip {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.source-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.src-linkedin   { background: #0A66C2; }
+.src-indeed     { background: #2164F3; }
+.src-glassdoor  { background: #0CAA41; }
+.src-zip_recruiter { background: #E35D5D; }
+.src-other      { background: var(--text-muted); }
+
+.card-reasoning {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-size: 11px;
+  font-family: 'Geist', sans-serif;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.action-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-hover); }
+
+.action-btn.approve {
+  color: var(--green);
+  border-color: rgba(74,222,128,0.3);
+}
+.action-btn.approve:hover {
+  background: rgba(74,222,128,0.08);
+  border-color: var(--green);
+}
+
+.action-btn.skip {
+  color: var(--red);
+  border-color: rgba(248,113,113,0.2);
+}
+.action-btn.skip:hover {
+  background: rgba(248,113,113,0.06);
+  border-color: var(--red);
+}
+
+.status-pill {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.status-new          { color: var(--blue);  border-color: rgba(96,165,250,0.3);  background: rgba(96,165,250,0.06); }
+.status-reviewed     { color: var(--amber); border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.06); }
+.status-applied      { color: var(--green); border-color: rgba(74,222,128,0.3);  background: rgba(74,222,128,0.06); }
+.status-interviewing { color: var(--gold);  border-color: rgba(201,169,110,0.3); background: var(--gold-glow); }
+.status-offer        { color: #A78BFA;      border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
+.status-rejected     { color: var(--text-muted); border-color: var(--border);    background: transparent; }
+
+/* ─── Detail Panel ──────────────────────────────────────── */
+.detail-panel {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
+.panel-empty-icon {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  color: var(--text-muted);
+  opacity: 0.3;
+}
+
+.panel-empty-text {
+  font-size: 13px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+.panel-header {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-role {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.panel-company {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.panel-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.panel-score-big {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.panel-score-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-tab {
+  flex: 1;
+  padding: 11px 8px;
+  text-align: center;
+  font-size: 11px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+
+.panel-tab:hover { color: var(--text-dim); }
+
+.panel-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--surface-2); }
+
+.draft-section {
+  margin-bottom: 20px;
+}
+
+.draft-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.draft-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.draft-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  font-family: 'Geist', sans-serif;
+}
+
+textarea.draft-text {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  resize: vertical;
+  min-height: 120px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  line-height: 1.65;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+textarea.draft-text:focus {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+
+.panel-actions {
+  padding: 16px 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.panel-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.18s ease;
+  letter-spacing: 0.02em;
+}
+
+.btn-approve {
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.4);
+  color: var(--green);
+}
+.btn-approve:hover {
+  background: rgba(74,222,128,0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(74,222,128,0.15);
+}
+
+.btn-edit {
+  background: transparent;
+  border-color: var(--border-hover);
+  color: var(--text-dim);
+}
+.btn-edit:hover { background: var(--surface-2); color: var(--text); }
+
+.btn-skip {
+  background: transparent;
+  border-color: rgba(248,113,113,0.2);
+  color: var(--red);
+}
+.btn-skip:hover { background: rgba(248,113,113,0.06); }
+
+/* ─── Reasoning block ────────────────────────────────── */
+.reasoning-block {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.flags-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+.flag-chip {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-family: 'Geist', sans-serif;
+}
+
+.flag-green { color: var(--green); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.06); }
+.flag-red   { color: var(--red);   border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.05); }
+
+/* ─── Empty state list ────────────────────────────────── */
+.list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 10px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.list-empty-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.list-empty-sub {
+  font-size: 12px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.06em;
+  max-width: 240px;
+  line-height: 1.6;
+}
+
+/* ─── Config banner ────────────────────────────────────── */
+.config-banner {
+  background: rgba(201,169,110,0.08);
+  border: 1px solid rgba(201,169,110,0.2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--gold-dim);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* ─── Supabase config fields ────────────────────────────── */
+.config-panel {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+
+.field-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.field-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'Geist Mono', monospace;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field-input:focus { border-color: var(--gold-dim); }
+.field-input::placeholder { color: var(--text-muted); }
+
+.save-btn {
+  background: var(--gold);
+  color: #0B0B0E;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px;
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  margin-top: 4px;
+}
+.save-btn:hover { background: #D9B97E; }
+
+/* ═══ ANIMATIONS ═══════════════════════════════════════ */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══ SCROLLBAR GLOBAL ════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 2px; }
+</style>
+</head>
+
+<body>
+
+<!-- ═══ SIDEBAR ════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Apex</div>
+    <div class="logo-sub">Job Agent · v1.0</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-item active" onclick="setView('pipeline')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="1" y="1" width="6" height="6" rx="1"/>
+        <rect x="9" y="1" width="6" height="6" rx="1"/>
+        <rect x="1" y="9" width="6" height="6" rx="1"/>
+        <rect x="9" y="9" width="6" height="6" rx="1"/>
+      </svg>
+      Pipeline
+      <span class="nav-badge" id="nav-total">–</span>
+    </div>
+
+    <div class="nav-item" onclick="setView('email')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="1" y="3" width="14" height="10" rx="1.5"/>
+        <path d="M1 4l7 5 7-5"/>
+      </svg>
+      Email Replies
+      <span class="nav-badge" id="nav-emails">–</span>
+    </div>
+
+    <div class="nav-item" onclick="setView('settings')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+        <circle cx="8" cy="8" r="2.5"/>
+        <path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.93 2.93l1.41 1.41M11.66 11.66l1.41 1.41M2.93 13.07l1.41-1.41M11.66 4.34l1.41-1.41"/>
+      </svg>
+      Settings
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="run-btn" onclick="runAgent()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M3 2l8 4.5L3 11V2z" fill="currentColor"/>
+      </svg>
+      Run Agent
+    </button>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title" id="view-title">Pipeline <span>Overview</span></div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value" id="stat-new">–</div>
+        <div class="stat-label">New</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value" id="stat-applied">–</div>
+        <div class="stat-label">Applied</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value" id="stat-interviewing">–</div>
+        <div class="stat-label">Interviews</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value" id="stat-offer">–</div>
+        <div class="stat-label">Offers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Views -->
+  <div id="view-pipeline" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <button class="filter-btn active" data-status="all" onclick="filterJobs('all', this)">
+        <span class="filter-dot"></span> All
+      </button>
+      <button class="filter-btn" data-status="new" onclick="filterJobs('new', this)">
+        <span class="filter-dot" style="color:var(--blue)"></span> New
+      </button>
+      <button class="filter-btn" data-status="reviewed" onclick="filterJobs('reviewed', this)">
+        <span class="filter-dot" style="color:var(--amber)"></span> Reviewed
+      </button>
+      <button class="filter-btn" data-status="applied" onclick="filterJobs('applied', this)">
+        <span class="filter-dot" style="color:var(--green)"></span> Applied
+      </button>
+      <button class="filter-btn" data-status="interviewing" onclick="filterJobs('interviewing', this)">
+        <span class="filter-dot" style="color:var(--gold)"></span> Interviewing
+      </button>
+      <button class="filter-btn" data-status="offer" onclick="filterJobs('offer', this)">
+        <span class="filter-dot" style="color:#A78BFA"></span> Offers
+      </button>
+      <button class="filter-btn" data-status="rejected" onclick="filterJobs('rejected', this)">
+        <span class="filter-dot" style="color:var(--text-muted)"></span> Rejected
+      </button>
+      <div class="filter-spacer"></div>
+      <input class="search-box" type="text" placeholder="Search jobs..." oninput="searchJobs(this.value)">
+    </div>
+
+    <!-- Content split -->
+    <div class="content">
+      <div class="job-list" id="job-list">
+        <div class="list-empty">
+          <div class="list-empty-title">No jobs yet</div>
+          <div class="list-empty-sub">Run the agent to start searching. Matches will appear here.</div>
+        </div>
+      </div>
+
+      <div class="detail-panel" id="detail-panel">
+        <div class="panel-empty">
+          <div class="panel-empty-icon">◈</div>
+          <div class="panel-empty-text">Select a job to review</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email view -->
+  <div id="view-email" style="display:none; flex:1; overflow-y:auto; padding:24px 32px;">
+    <div class="config-banner">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="flex-shrink:0;margin-top:1px">
+        <circle cx="8" cy="8" r="7"/>
+        <path d="M8 5v4M8 11v.5"/>
+      </svg>
+      Email polling requires Gmail OAuth. Run <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">python run.py email</code> from the terminal — drafts will appear here.
+    </div>
+    <div id="email-list">
+      <div class="list-empty">
+        <div class="list-empty-title">No email threads yet</div>
+        <div class="list-empty-sub">Run <code>python run.py email</code> to poll Gmail for recruiter messages.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings view -->
+  <div id="view-settings" style="display:none; flex:1; overflow-y:auto;">
+    <div class="config-panel">
+      <div class="config-banner">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="flex-shrink:0;margin-top:1px">
+          <circle cx="8" cy="8" r="7"/>
+          <path d="M8 5v4M8 11v.5"/>
+        </svg>
+        Enter your Supabase credentials. These are stored locally in your browser — never sent anywhere.
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Supabase URL</div>
+        <input class="field-input" id="sb-url" type="text" placeholder="https://xxxx.supabase.co">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Supabase Anon Key</div>
+        <input class="field-input" id="sb-key" type="password" placeholder="eyJ...">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Score Threshold</div>
+        <input class="field-input" id="threshold" type="number" value="62" min="0" max="100">
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+
+      <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
+        <div class="field-label" style="margin-bottom:12px;">Quick commands</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">pip install -r requirements.txt</code>
+          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">python run.py search</code>
+          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">python run.py schedule</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  APEX AGENT DASHBOARD
+// ═══════════════════════════════════════════════════
+
+const SUPABASE_URL_KEY = 'apex_sb_url';
+const SUPABASE_KEY_KEY = 'apex_sb_key';
+
+let allJobs = [];
+let filteredJobs = [];
+let selectedJobId = null;
+let activeFilter = 'all';
+let activeTab = 'cover';
+let editMode = false;
+
+// ── Supabase client ─────────────────────────────────
+function getSupabase() {
+  const url = localStorage.getItem(SUPABASE_URL_KEY);
+  const key = localStorage.getItem(SUPABASE_KEY_KEY);
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+async function supaFetch(path, options = {}) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('No Supabase credentials. Configure in Settings.');
+  const res = await fetch(`${sb.url}/rest/v1/${path}`, {
+    headers: {
+      'apikey': sb.key,
+      'Authorization': `Bearer ${sb.key}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers,
+    },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+  return res.json();
+}
+
+// ── Load jobs ────────────────────────────────────────
+async function loadJobs() {
+  const sb = getSupabase();
+  if (!sb) {
+    renderDemoData();
+    return;
+  }
+
+  try {
+    const jobs = await supaFetch('jobs?select=*,drafts(*)&order=score.desc,found_at.desc');
+    allJobs = jobs;
+    updateStats();
+    applyFilter(activeFilter);
+  } catch (e) {
+    console.warn('Load failed:', e.message);
+    renderDemoData();
+  }
+}
+
+function updateStats() {
+  const counts = { new:0, reviewed:0, applied:0, interviewing:0, offer:0, rejected:0 };
+  allJobs.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
+  document.getElementById('stat-new').textContent = counts.new;
+  document.getElementById('stat-applied').textContent = counts.applied;
+  document.getElementById('stat-interviewing').textContent = counts.interviewing;
+  document.getElementById('stat-offer').textContent = counts.offer;
+  document.getElementById('nav-total').textContent = allJobs.length;
+}
+
+function applyFilter(status) {
+  activeFilter = status;
+  if (status === 'all') {
+    filteredJobs = [...allJobs];
+  } else {
+    filteredJobs = allJobs.filter(j => j.status === status);
+  }
+  renderJobList(filteredJobs);
+}
+
+function filterJobs(status, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter(status);
+}
+
+function searchJobs(query) {
+  const q = query.toLowerCase();
+  const base = activeFilter === 'all' ? allJobs : allJobs.filter(j => j.status === activeFilter);
+  const filtered = q
+    ? base.filter(j => (j.title+j.company+j.location).toLowerCase().includes(q))
+    : base;
+  renderJobList(filtered);
+}
+
+// ── Render job list ─────────────────────────────────
+function renderJobList(jobs) {
+  const el = document.getElementById('job-list');
+  if (!jobs.length) {
+    el.innerHTML = `<div class="list-empty">
+      <div class="list-empty-title">No matches</div>
+      <div class="list-empty-sub">No jobs in this filter. Try "All" or run the agent.</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = jobs.map((job, i) => {
+    const score = job.score || 0;
+    const scoreClass = score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : 'score-low';
+    const cardClass = score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : '';
+    const srcClass = `src-${(job.source || 'other').toLowerCase().replace(' ','_')}`;
+    const isSelected = job.id === selectedJobId ? 'selected' : '';
+    const delay = Math.min(i * 0.03, 0.3);
+
+    return `<div class="job-card ${cardClass} ${isSelected}"
+              onclick="selectJob('${job.id}')"
+              style="animation-delay:${delay}s">
+      <div class="card-top">
+        <div>
+          <div class="card-title">${esc(job.title)}</div>
+          <div class="card-company">${esc(job.company)} · ${esc(job.location || '')}</div>
+        </div>
+        <div class="score-badge ${scoreClass}">${score}</div>
+      </div>
+      <div class="card-meta">
+        <span class="meta-chip"><span class="source-dot ${srcClass}"></span>${esc(job.source || '')}</span>
+        <span class="meta-chip">${timeAgo(job.found_at)}</span>
+        <span class="status-pill status-${job.status}">${job.status}</span>
+      </div>
+      ${job.score_reasoning ? `<div class="card-reasoning">${esc(job.score_reasoning)}</div>` : ''}
+      <div class="card-actions">
+        <button class="action-btn approve" onclick="event.stopPropagation();quickApprove('${job.id}')">✓ Approve</button>
+        <button class="action-btn" onclick="event.stopPropagation();selectJob('${job.id}');setTab('cover')">Review</button>
+        <button class="action-btn skip" onclick="event.stopPropagation();skipJob('${job.id}')">✕ Skip</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Select job → detail panel ────────────────────────
+function selectJob(id) {
+  selectedJobId = id;
+  editMode = false;
+  const job = allJobs.find(j => j.id === id);
+  if (!job) return;
+
+  // Highlight selected card
+  document.querySelectorAll('.job-card').forEach(c => c.classList.remove('selected'));
+  const cards = document.querySelectorAll('.job-card');
+  const idx = filteredJobs.findIndex(j => j.id === id);
+  if (cards[idx]) cards[idx].classList.add('selected');
+
+  renderDetailPanel(job);
+}
+
+function renderDetailPanel(job) {
+  const score = job.score || 0;
+  const scoreClass = score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : 'score-low';
+  const draft = (job.drafts || [])[0] || {};
+
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = `
+    <div class="panel-header">
+      <div class="panel-role">${esc(job.title)}</div>
+      <div class="panel-company">${esc(job.company)} · ${esc(job.location || '')}</div>
+      <div class="panel-score-row">
+        <div class="panel-score-big ${scoreClass}">${score}</div>
+        <div>
+          <div class="panel-score-label">Match Score</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+            <a href="${esc(job.url || '#')}" target="_blank"
+               style="color:var(--gold-dim);text-decoration:none;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:0.06em;">
+              Open listing ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-tabs">
+      <div class="panel-tab ${activeTab==='cover'?'active':''}" onclick="setTab('cover')">Cover Letter</div>
+      <div class="panel-tab ${activeTab==='email'?'active':''}" onclick="setTab('email')">Email</div>
+      <div class="panel-tab ${activeTab==='linkedin'?'active':''}" onclick="setTab('linkedin')">LinkedIn</div>
+      <div class="panel-tab ${activeTab==='why'?'active':''}" onclick="setTab('why')">Why Score</div>
+    </div>
+
+    <div class="panel-body" id="panel-body">
+      ${renderTabContent(job, draft)}
+    </div>
+
+    <div class="panel-actions">
+      <button class="panel-btn btn-approve" onclick="approveJob('${job.id}', '${draft.id||''}')">✓ Approve & Mark Applied</button>
+      <button class="panel-btn btn-edit" onclick="toggleEdit('${job.id}')">Edit Drafts</button>
+      <button class="panel-btn btn-skip" onclick="skipJob('${job.id}')">Skip</button>
+    </div>
+  `;
+}
+
+function renderTabContent(job, draft) {
+  if (activeTab === 'cover') {
+    return `<div class="draft-section">
+      <div class="draft-label">Cover Letter</div>
+      ${editMode
+        ? `<textarea class="draft-text" id="edit-cover" rows="12">${esc(draft.cover_letter||'No draft generated.')}</textarea>`
+        : `<div class="draft-text">${esc(draft.cover_letter||'No draft generated.')}</div>`}
+    </div>`;
+  }
+  if (activeTab === 'email') {
+    return `<div class="draft-section">
+      <div class="draft-label">Subject Line</div>
+      ${editMode
+        ? `<input style="width:100%;margin-bottom:12px;" class="field-input" id="edit-subject" value="${esc(draft.email_subject||'')}"/>`
+        : `<div class="draft-text" style="margin-bottom:12px;font-weight:500;">${esc(draft.email_subject||'')}</div>`}
+      <div class="draft-label">Email Body</div>
+      ${editMode
+        ? `<textarea class="draft-text" id="edit-email" rows="8">${esc(draft.email_body||'No draft.')}</textarea>`
+        : `<div class="draft-text">${esc(draft.email_body||'No draft.')}</div>`}
+    </div>`;
+  }
+  if (activeTab === 'linkedin') {
+    return `<div class="draft-section">
+      <div class="draft-label">LinkedIn Note <span style="color:var(--text-muted);font-size:9px">(300 chars max)</span></div>
+      ${editMode
+        ? `<textarea class="draft-text" id="edit-linkedin" rows="4" maxlength="300">${esc(draft.linkedin_note||'')}</textarea>`
+        : `<div class="draft-text">${esc(draft.linkedin_note||'No draft.')}</div>`}
+    </div>`;
+  }
+  if (activeTab === 'why') {
+    return `<div class="reasoning-block">${esc(job.score_reasoning||'No reasoning available.')}</div>`;
+  }
+  return '';
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  if (selectedJobId) {
+    const job = allJobs.find(j => j.id === selectedJobId);
+    if (job) renderDetailPanel(job);
+  }
+}
+
+function toggleEdit(jobId) {
+  editMode = !editMode;
+  if (selectedJobId) {
+    const job = allJobs.find(j => j.id === selectedJobId);
+    if (job) renderDetailPanel(job);
+  }
+}
+
+// ── Actions ──────────────────────────────────────────
+async function quickApprove(jobId) {
+  await updateStatus(jobId, 'applied');
+  toast('Marked as applied ✓');
+}
+
+async function approveJob(jobId, draftId) {
+  // Save any edits
+  if (editMode && draftId) {
+    const fields = {};
+    const coverEl = document.getElementById('edit-cover');
+    const subjectEl = document.getElementById('edit-subject');
+    const emailEl = document.getElementById('edit-email');
+    const linkedinEl = document.getElementById('edit-linkedin');
+    if (coverEl)   fields.cover_letter  = coverEl.value;
+    if (subjectEl) fields.email_subject = subjectEl.value;
+    if (emailEl)   fields.email_body    = emailEl.value;
+    if (linkedinEl) fields.linkedin_note = linkedinEl.value;
+    if (Object.keys(fields).length) await updateDraft(draftId, fields);
+  }
+  await updateStatus(jobId, 'applied');
+  toast('Application approved and marked as applied ✓');
+  editMode = false;
+}
+
+async function skipJob(jobId) {
+  await updateStatus(jobId, 'rejected');
+  toast('Skipped');
+  const idx = allJobs.findIndex(j => j.id === jobId);
+  if (idx !== -1) allJobs[idx].status = 'rejected';
+  selectedJobId = null;
+  document.getElementById('detail-panel').innerHTML = `
+    <div class="panel-empty">
+      <div class="panel-empty-icon">◈</div>
+      <div class="panel-empty-text">Select a job to review</div>
+    </div>`;
+  applyFilter(activeFilter);
+}
+
+async function updateStatus(jobId, status) {
+  try {
+    await supaFetch(`jobs?id=eq.${jobId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    const job = allJobs.find(j => j.id === jobId);
+    if (job) job.status = status;
+    updateStats();
+    applyFilter(activeFilter);
+    if (selectedJobId === jobId) {
+      const updatedJob = allJobs.find(j => j.id === jobId);
+      if (updatedJob) renderDetailPanel(updatedJob);
+    }
+  } catch (e) {
+    toast('Error updating: ' + e.message, true);
+  }
+}
+
+async function updateDraft(draftId, fields) {
+  try {
+    await supaFetch(`drafts?id=eq.${draftId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ...fields, edited: true }),
+    });
+  } catch (e) { console.warn('Draft update failed:', e); }
+}
+
+// ── Views ────────────────────────────────────────────
+function setView(view) {
+  ['pipeline','email','settings'].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = 'none';
+  });
+  document.getElementById(`view-${view}`).style.display = view === 'pipeline' ? 'flex' : 'block';
+  document.getElementById(`view-${view}`).style.flexDirection = view === 'pipeline' ? 'column' : '';
+  document.getElementById(`view-${view}`).style.flex = '1';
+  document.getElementById(`view-${view}`).style.overflow = view === 'pipeline' ? 'hidden' : 'auto';
+
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  const titles = { pipeline: 'Pipeline <span>Overview</span>', email: 'Email <span>Replies</span>', settings: 'Agent <span>Settings</span>' };
+  document.getElementById('view-title').innerHTML = titles[view];
+
+  if (view === 'email') loadEmails();
+}
+
+async function loadEmails() {
+  const sb = getSupabase();
+  if (!sb) return;
+  try {
+    const threads = await supaFetch('email_threads?order=received_at.desc');
+    const el = document.getElementById('email-list');
+    if (!threads.length) {
+      el.innerHTML = `<div class="list-empty"><div class="list-empty-title">No email threads</div><div class="list-empty-sub">Run python run.py email to poll Gmail.</div></div>`;
+      return;
+    }
+    el.innerHTML = threads.map(t => `
+      <div class="job-card" style="margin-bottom:8px">
+        <div class="card-top">
+          <div>
+            <div class="card-title" style="font-size:15px">${esc(t.subject||'(no subject)')}</div>
+            <div class="card-company">${esc(t.sender_name||t.sender_email||'')} · ${timeAgo(t.received_at)}</div>
+          </div>
+          <span class="status-pill status-new">${esc(t.intent||'other')}</span>
+        </div>
+        ${t.draft_reply ? `<div class="card-reasoning" style="-webkit-line-clamp:3">${esc(t.draft_reply)}</div>` : ''}
+        <div class="card-actions">
+          <button class="action-btn approve" onclick="approveReply('${t.id}')">✓ Approve Reply</button>
+          <button class="action-btn skip" onclick="skipReply('${t.id}')">✕ Skip</button>
+        </div>
+      </div>`).join('');
+    document.getElementById('nav-emails').textContent = threads.length;
+  } catch(e) { console.warn('Email load failed', e); }
+}
+
+async function approveReply(id) {
+  try {
+    await supaFetch(`email_threads?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reply_approved: true }),
+    });
+    toast('Reply approved ✓');
+    loadEmails();
+  } catch(e) { toast('Error: '+e.message, true); }
+}
+
+async function skipReply(id) {
+  try {
+    await supaFetch(`email_threads?id=eq.${id}`, {
+      method: 'DELETE',
+    });
+    loadEmails();
+  } catch(e) { toast('Error: '+e.message, true); }
+}
+
+// ── Run agent ────────────────────────────────────────
+function runAgent() {
+  toast('Run: python run.py search — then refresh this page', false, 4000);
+}
+
+// ── Settings ─────────────────────────────────────────
+function saveSettings() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (url) localStorage.setItem(SUPABASE_URL_KEY, url);
+  if (key) localStorage.setItem(SUPABASE_KEY_KEY, key);
+  toast('Settings saved ✓');
+  setTimeout(() => loadJobs(), 500);
+}
+
+function loadSavedSettings() {
+  const url = localStorage.getItem(SUPABASE_URL_KEY) || '';
+  const key = localStorage.getItem(SUPABASE_KEY_KEY) || '';
+  const urlEl = document.getElementById('sb-url');
+  const keyEl = document.getElementById('sb-key');
+  if (urlEl && url) urlEl.value = url;
+  if (keyEl && key) keyEl.value = key;
+}
+
+// ── Demo data ────────────────────────────────────────
+function renderDemoData() {
+  allJobs = [
+    { id:'demo-1', title:'Head of Design', company:'Linear', location:'Remote', source:'linkedin', url:'#', score:91, score_reasoning:'Strong alignment: Linear is a product-led tool company that values design craft deeply. Seniority match. Remote-friendly.', status:'new', found_at: new Date(Date.now()-3600000).toISOString(), drafts:[{id:'d1',cover_letter:'Dear Linear team,\n\nI\'ve watched Linear become the standard for how engineers think about their tools — and I\'ve been waiting for the moment this role would open.\n\nIn 25 years of design leadership, the work I\'m most proud of sits at this exact intersection: tools that engineers and designers actually trust. At Apple and Walmart, I led design for systems used by tens of thousands of internal users — where the bar for craft isn\'t aspirational, it\'s required.\n\nI\'d love to talk about what "Head of Design" means at Linear as you scale, and where I could accelerate that.\n\nVishal', email_subject:'Head of Design — Vishal Mehta', email_body:'Hi,\n\nI\'m Vishal — a design leader with 25 years of experience, most recently contracted to Apple. Linear has been on my shortlist for a while; this role feels like the right moment.\n\nHappy to share more or set up a call whenever works.\n\nVishal', linkedin_note:'Hi — I\'m a design leader with 25 years experience, ex-Apple contractor. Linear has been on my radar for years. Saw the Head of Design role — would love to connect.'}] },
+    { id:'demo-2', title:'Principal UX Designer', company:'Stripe', location:'New York, NY', source:'indeed', url:'#', score:84, score_reasoning:'Excellent fit: Stripe\'s product surface is complex, multi-stakeholder, and engineering-led — exactly where this candidate thrives.', status:'new', found_at: new Date(Date.now()-7200000).toISOString(), drafts:[{id:'d2',cover_letter:'To the Stripe design team,\n\nPayments infrastructure sounds like the least design-friendly domain imaginable — until you look at what Stripe has done with it.\n\nI\'ve spent the past several years at the intersection of engineering complexity and design clarity — most recently at Apple, before that across enterprise and consumer at Walmart scale. The pattern in my work is making the technically intricate feel inevitable to the people who use it.\n\nThat problem, at Stripe\'s scale, is the one I\'d want to be working on.\n\nVishal', email_subject:'Principal UX Designer — Vishal Mehta', email_body:'Hi,\n\nVishal here — UX design leader, 25 years in, currently contracted to Apple. Stripe\'s product design has set the standard for developer tooling for a decade. The Principal UX Designer role caught my eye immediately.\n\nWorth a conversation?\n\nVishal', linkedin_note:'Hi — design leader, 25yr experience, ex-Apple. Stripe\'s product work is something I\'ve admired for years. Saw the Principal UX role — would be glad to connect.'}] },
+    { id:'demo-3', title:'Design Director', company:'Figma', location:'San Francisco, CA', source:'glassdoor', url:'#', score:78, score_reasoning:'Great domain fit. Some uncertainty around whether this is IC or management — JD language is ambiguous. Worth clarifying in outreach.', status:'reviewed', found_at: new Date(Date.now()-86400000).toISOString(), drafts:[{id:'d3',cover_letter:'Hi Figma,\n\nI\'ve built things with Figma for years and advocated for it in organizations that resisted change. So there\'s something poetic about applying here.\n\nMy background is equal parts design leadership and software engineering — which is unusual, and relevant. The teams that build design tools need leaders who can hold both worlds without translating between them.\n\nI\'d like to talk about what the Design Director role is shaping up to be.\n\nVishal', email_subject:'Design Director — Vishal Mehta', email_body:'Hi,\n\nI\'m Vishal — a design leader who\'s been using and advocating for Figma since early days. The Design Director role opened at an interesting time for me. Currently wrapping up a contract at Apple, looking for the right next chapter.\n\nOpen to a chat?\n\nVishal', linkedin_note:'Hi — Figma has been central to my design practice for years. Design Director role opened at a good time. Design leader, 25yr exp, ex-Apple. Would love to connect.'}] },
+  ];
+  updateStats();
+  applyFilter('all');
+}
+
+// ── Toast ─────────────────────────────────────────────
+function toast(msg, isError=false, duration=2500) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  Object.assign(el.style, {
+    position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
+    background: isError ? 'var(--red)' : 'var(--gold)',
+    color: '#0B0B0E', padding:'10px 18px', borderRadius:'8px',
+    fontSize:'13px', fontFamily:'Geist,sans-serif', fontWeight:'500',
+    boxShadow:'0 4px 20px rgba(0,0,0,0.4)',
+    animation:'fadeSlideIn 0.2s ease',
+  });
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── Utils ─────────────────────────────────────────────
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (h < 1) return 'just now';
+  if (h < 24) return `${h}h ago`;
+  return `${d}d ago`;
+}
+
+// ── Init ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadSavedSettings();
+  loadJobs();
+});
+</script>
+
+</body>
+</html>
