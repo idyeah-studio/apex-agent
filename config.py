@@ -16,24 +16,23 @@ TARGET_ROLES = [
 LOCATIONS = [
     "San Francisco, CA",
     "Cupertino, CA",
-    "New York, NY",
     "Remote",
 ]
+
+# ── LinkedIn auth ────────────────────────────────────
+# Paste your li_at cookie value here (see README for how to get it)
+# This lets the agent search as your logged-in account — more results,
+# less rate limiting, access to salary data.
+LINKEDIN_LI_AT = "REDACTED_LINKEDIN_COOKIE"   # e.g. "AQEDATd8vgAA..."
+
+# ── Search settings ──────────────────────────────────
+# Jobs per role × location combo (LinkedIn returns 25 per page)
+# 25 = 1 page, 50 = 2 pages, 75 = 3 pages
+RESULTS_PER_SEARCH = 50
 
 # ── Scoring ──────────────────────────────────────────
 # Jobs below this score are silently discarded (0–100)
 SCORE_THRESHOLD = 62
-
-# How many listings to pull per role × per source
-RESULTS_PER_SEARCH = 20
-
-# Sources to search (comment out any you don't want)
-SOURCES = [
-    "linkedin",
-    "indeed",
-    "glassdoor",
-    "zip_recruiter",
-]
 
 # ── Salary filter ────────────────────────────────────
 MIN_SALARY = 200_000   # USD annual, 0 to disable
