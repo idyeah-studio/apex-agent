@@ -4,13 +4,12 @@ and LinkedIn connection notes for each approved job.
 """
 
 import anthropic
-import config
 
 _client = anthropic.Anthropic()
 
 
 COVER_LETTER_PROMPT = """
-You are a ghostwriter for a senior UX design leader. Write a cover letter for this job application.
+You are a ghostwriter for a job candidate. Write a cover letter for this job application.
 
 ## Candidate voice and style
 {voice}
@@ -40,7 +39,7 @@ Write only the letter body. No subject line. No metadata.
 
 
 EMAIL_PROMPT = """
-You are a ghostwriter for a senior UX design leader. Write a short outreach email to apply for a role.
+You are a ghostwriter for a job candidate. Write a short outreach email to apply for a role.
 
 ## Candidate voice and style
 {voice}
@@ -82,14 +81,14 @@ Write only the note text.
 """
 
 
-def draft_all(job: dict) -> dict:
+def draft_all(job: dict, profile: dict) -> dict:
     """
-    Generate cover letter, email, and LinkedIn note for a job.
-    Returns a dict ready to insert into the drafts table.
+    Generate cover letter, email, and LinkedIn note for a job
+    using the given profile's resume and voice.
     """
-    cover_letter = _draft_cover_letter(job)
-    subject, email_body = _draft_email(job)
-    linkedin_note = _draft_linkedin_note(job)
+    cover_letter = _draft_cover_letter(job, profile)
+    subject, email_body = _draft_email(job, profile)
+    linkedin_note = _draft_linkedin_note(job, profile)
 
     return {
         "cover_letter":  cover_letter,
@@ -99,19 +98,34 @@ def draft_all(job: dict) -> dict:
     }
 
 
-def _draft_cover_letter(job: dict) -> str:
+def _get_name(profile: dict) -> str:
+    resume = profile.get("resume") or ""
+    name_line = next(
+        (l for l in resume.splitlines() if l.strip().startswith("Name:")), ""
+    )
+    if name_line:
+        return name_line.replace("Name:", "").strip()
+    return profile.get("name", "")
+
+
+def _get_signoff(profile: dict) -> str:
+    name = _get_name(profile)
+    return name.split()[0] if name else "Best"
+
+
+def _draft_cover_letter(job: dict, profile: dict) -> str:
     prompt = COVER_LETTER_PROMPT.format(
-        voice=config.VOICE,
-        resume=config.RESUME,
+        voice=profile.get("voice") or "Professional and direct.",
+        resume=profile.get("resume") or "",
         title=job.get("title", ""),
         company=job.get("company", ""),
         location=job.get("location", ""),
         description=(job.get("description", "") or "")[:4000],
-        signoff="Vishal",
+        signoff=_get_signoff(profile),
     )
     try:
         response = _client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-sonnet-4-5-20250514",
             max_tokens=800,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -120,27 +134,26 @@ def _draft_cover_letter(job: dict) -> str:
         return f"[Draft failed: {e}]"
 
 
-def _draft_email(job: dict) -> tuple[str, str]:
-    # Condense resume to key lines for the short email
+def _draft_email(job: dict, profile: dict) -> tuple[str, str]:
+    resume = profile.get("resume") or ""
     resume_brief = "\n".join(
-        [l for l in config.RESUME.strip().splitlines() if l.strip()][:12]
+        [l for l in resume.strip().splitlines() if l.strip()][:12]
     )
 
     prompt = EMAIL_PROMPT.format(
-        voice=config.VOICE,
+        voice=profile.get("voice") or "Professional and direct.",
         resume_brief=resume_brief,
         title=job.get("title", ""),
         company=job.get("company", ""),
-        signoff="Vishal",
+        signoff=_get_signoff(profile),
     )
     try:
         response = _client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-sonnet-4-5-20250514",
             max_tokens=400,
             messages=[{"role": "user", "content": prompt}],
         )
         text = response.content[0].text.strip()
-        # Parse subject + body
         if "SUBJECT:" in text and "BODY:" in text:
             parts = text.split("BODY:", 1)
             subject = parts[0].replace("SUBJECT:", "").strip()
@@ -151,22 +164,22 @@ def _draft_email(job: dict) -> tuple[str, str]:
         return "Application", f"[Draft failed: {e}]"
 
 
-def _draft_linkedin_note(job: dict) -> str:
-    name_line = next(
-        (l for l in config.RESUME.splitlines() if l.startswith("Name:")), "Name: Vishal"
-    )
-    name = name_line.replace("Name:", "").strip()
+def _draft_linkedin_note(job: dict, profile: dict) -> str:
+    resume = profile.get("resume") or ""
+    # Build a brief summary from first few lines
+    lines = [l.strip() for l in resume.splitlines() if l.strip()]
+    summary = ". ".join(lines[2:5]) if len(lines) > 4 else profile.get("name", "")
 
     prompt = LINKEDIN_NOTE_PROMPT.format(
         title=job.get("title", ""),
         company=job.get("company", ""),
-        name=name,
-        summary="25-year UX design leader, ex-Apple contractor, IEEE Senior Member",
-        voice=config.VOICE,
+        name=_get_name(profile),
+        summary=summary[:200],
+        voice=profile.get("voice") or "Professional and direct.",
     )
     try:
         response = _client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-sonnet-4-5-20250514",
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}],
         )
