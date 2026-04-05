@@ -1023,6 +1023,9 @@ textarea.draft-text:focus {
 
 <body>
 
+<!-- ═══ PROFILE PICKER (shown when no profile selected) ═══ -->
+<div id="profile-picker" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);align-items:center;justify-content:center;"></div>
+
 <!-- ═══ SIDEBAR ════════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="logo">
@@ -1061,14 +1064,12 @@ textarea.draft-text:focus {
   </nav>
 
   <div class="sidebar-footer">
+    <div id="profile-name-display" style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:8px;text-align:center;cursor:pointer;" onclick="switchProfile()" title="Switch profile"></div>
     <button class="run-btn" id="run-btn" onclick="runAgent()">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
         <path d="M3 2l8 4.5L3 11V2z" fill="currentColor"/>
       </svg>
       Run Agent
-    </button>
-    <button class="run-btn" id="continue-btn" onclick="continueSearch()" style="margin-top:6px;background:transparent;color:var(--gold);border:1px solid var(--gold-dim);">
-      ↓ Continue...
     </button>
   </div>
 </aside>
@@ -1175,50 +1176,68 @@ textarea.draft-text:focus {
     </div>
   </div>
 
-  <!-- Settings view -->
+  <!-- Settings view (profile editor) -->
   <div id="view-settings" style="display:none; flex:1; overflow-y:auto;">
-    <div class="config-panel">
+    <div class="config-panel" id="settings-panel">
       <div class="config-banner">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="flex-shrink:0;margin-top:1px">
           <circle cx="8" cy="8" r="7"/>
           <path d="M8 5v4M8 11v.5"/>
         </svg>
-        Enter your Supabase credentials. These are stored locally in your browser — never sent anywhere.
+        Your profile tells the agent what to search for and how to write on your behalf. All fields are saved automatically.
       </div>
 
       <div class="field-group">
-        <div class="field-label">LinkedIn li_at Cookie</div>
-        <input class="field-input" id="li-at" type="password" placeholder="AQEDATd8vgAA...">
+        <div class="field-label">Target Roles (one per line)</div>
+        <textarea class="field-input" id="set-roles" rows="4" placeholder="Principal UX Designer&#10;Staff Product Designer&#10;Head of Design" style="resize:vertical;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Locations (one per line)</div>
+        <textarea class="field-input" id="set-locations" rows="3" placeholder="Remote&#10;San Francisco, CA&#10;New York, NY" style="resize:vertical;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Your Resume / Background</div>
+        <textarea class="field-input" id="set-resume" rows="12" placeholder="Paste your resume or a structured summary of your experience. The agent uses this for scoring and drafting." style="resize:vertical;font-size:13px;line-height:1.6"></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Writing Voice</div>
+        <textarea class="field-input" id="set-voice" rows="4" placeholder="Direct and confident. Story-driven. Warm but not eager." style="resize:vertical;font-size:13px;line-height:1.6"></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="field-group">
+          <div class="field-label">Dream Companies (one per line)</div>
+          <textarea class="field-input" id="set-dream" rows="4" placeholder="Apple&#10;Stripe&#10;Figma" style="resize:vertical;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Companies to Skip (one per line)</div>
+          <textarea class="field-input" id="set-blocklist" rows="4" placeholder="Acme Corp" style="resize:vertical;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="field-group">
+          <div class="field-label">Score Threshold (0–100)</div>
+          <input class="field-input" id="set-threshold" type="number" value="62" min="0" max="100">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Minimum Salary (USD, 0 to skip)</div>
+          <input class="field-input" id="set-salary" type="number" value="0" min="0" step="10000">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">LinkedIn li_at Cookie (optional, improves search)</div>
+        <input class="field-input" id="set-li-at" type="password" placeholder="AQEDATd8vgAA...">
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5">
           Chrome → linkedin.com → DevTools (F12) → Application → Cookies → li_at → copy Value
         </div>
       </div>
 
-      <div class="field-group">
-        <div class="field-label">Supabase URL</div>
-        <input class="field-input" id="sb-url" type="text" placeholder="https://xxxx.supabase.co">
-      </div>
-
-      <div class="field-group">
-        <div class="field-label">Supabase Anon Key</div>
-        <input class="field-input" id="sb-key" type="password" placeholder="eyJ...">
-      </div>
-
-      <div class="field-group">
-        <div class="field-label">Score Threshold</div>
-        <input class="field-input" id="threshold" type="number" value="62" min="0" max="100">
-      </div>
-
-      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
-
-      <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px;">
-        <div class="field-label" style="margin-bottom:12px;">Quick commands</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">pip install -r requirements.txt</code>
-          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">python run.py search</code>
-          <code style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-dim);background:var(--surface-2);padding:8px 12px;border-radius:6px;border:1px solid var(--border)">python run.py schedule</code>
-        </div>
-      </div>
+      <button class="save-btn" onclick="saveProfile()">Save Profile</button>
     </div>
   </div>
 
@@ -1248,7 +1267,7 @@ textarea.draft-text:focus {
 
 <script>
 // ═══════════════════════════════════════════════════
-//  APEX AGENT DASHBOARD
+//  APEX AGENT DASHBOARD — API-driven
 // ═══════════════════════════════════════════════════
 
 // ── Mobile sidebar toggle ────────────────────────────
@@ -1257,57 +1276,44 @@ function toggleSidebar() {
   document.getElementById('sidebar-overlay').classList.toggle('open');
 }
 
-const SUPABASE_URL_KEY = 'apex_sb_url';
-const SUPABASE_KEY_KEY = 'apex_sb_key';
-
 let allJobs = [];
 let filteredJobs = [];
 let selectedJobId = null;
 let activeFilter = 'all';
 let activeTab = 'cover';
 let editMode = false;
+let currentProfileId = localStorage.getItem('apex_profile_id') || null;
 
-// ── Supabase client ─────────────────────────────────
-function getSupabase() {
-  const url = localStorage.getItem(SUPABASE_URL_KEY);
-  const key = localStorage.getItem(SUPABASE_KEY_KEY);
-  if (!url || !key) return null;
-  return { url, key };
-}
-
-async function supaFetch(path, options = {}) {
-  const sb = getSupabase();
-  if (!sb) throw new Error('No Supabase credentials. Configure in Settings.');
-  const res = await fetch(`${sb.url}/rest/v1/${path}`, {
-    headers: {
-      'apikey': sb.key,
-      'Authorization': `Bearer ${sb.key}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...options.headers,
-    },
+// ── API helper ──────────────────────────────────────
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
-  if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
-  return res.json();
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // ── Load jobs ────────────────────────────────────────
 async function loadJobs() {
-  const sb = getSupabase();
-  if (!sb) {
-    renderDemoData();
+  if (!currentProfileId) {
+    allJobs = [];
+    updateStats();
+    applyFilter('all');
     return;
   }
 
   try {
-    const jobs = await supaFetch('jobs?select=*,drafts(*)&order=score.desc,found_at.desc');
-    allJobs = jobs;
+    const jobs = await api(`/api/profiles/${currentProfileId}/jobs`);
+    allJobs = jobs || [];
     updateStats();
     applyFilter(activeFilter);
   } catch (e) {
     console.warn('Load failed:', e.message);
-    renderDemoData();
+    allJobs = [];
+    updateStats();
+    applyFilter('all');
   }
 }
 
@@ -1541,7 +1547,7 @@ async function skipJob(jobId) {
 
 async function updateStatus(jobId, status) {
   try {
-    await supaFetch(`jobs?id=eq.${jobId}`, {
+    await api(`/api/jobs/${jobId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
@@ -1560,7 +1566,7 @@ async function updateStatus(jobId, status) {
 
 async function updateDraft(draftId, fields) {
   try {
-    await supaFetch(`drafts?id=eq.${draftId}`, {
+    await api(`/api/drafts/${draftId}`, {
       method: 'PATCH',
       body: JSON.stringify({ ...fields, edited: true }),
     });
@@ -1588,10 +1594,9 @@ function setView(view) {
 }
 
 async function loadEmails() {
-  const sb = getSupabase();
-  if (!sb) return;
+  if (!currentProfileId) return;
   try {
-    const threads = await supaFetch('email_threads?order=received_at.desc');
+    const threads = await api(`/api/profiles/${currentProfileId}/emails`);
     const el = document.getElementById('email-list');
     if (!threads.length) {
       el.innerHTML = `<div class="list-empty"><div class="list-empty-title">No email threads</div><div class="list-empty-sub">Run python run.py email to poll Gmail.</div></div>`;
@@ -1618,7 +1623,7 @@ async function loadEmails() {
 
 async function approveReply(id) {
   try {
-    await supaFetch(`email_threads?id=eq.${id}`, {
+    await api(`/api/email_threads/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ reply_approved: true }),
     });
@@ -1629,7 +1634,7 @@ async function approveReply(id) {
 
 async function skipReply(id) {
   try {
-    await supaFetch(`email_threads?id=eq.${id}`, {
+    await api(`/api/email_threads/${id}`, {
       method: 'DELETE',
     });
     loadEmails();
@@ -1637,35 +1642,31 @@ async function skipReply(id) {
 }
 
 // ── Agent runner ──────────────────────────────────────
-const API = 'http://localhost:5050';
 let logPoller = null;
 
 async function runAgent() {
-  // Check if server is running
-  try {
-    await fetch(`${API}/health`, { signal: AbortSignal.timeout(1500) });
-  } catch {
-    toast('Start the server first: python3 server.py', true, 5000);
+  if (!currentProfileId) {
+    toast('Create a profile first in Settings', true, 4000);
     return;
   }
 
-  // Open modal
   openModal();
 
   try {
-    const res = await fetch(`${API}/run`, { method: 'POST' });
-    const data = await res.json();
+    const data = await api('/api/run', {
+      method: 'POST',
+      body: JSON.stringify({ profile_id: currentProfileId }),
+    });
     if (!data.ok) {
       setModalStatus(data.message || 'Failed to start');
       return;
     }
   } catch (e) {
-    toast('Could not reach server: ' + e.message, true);
+    toast('Could not start agent: ' + e.message, true);
     closeModal();
     return;
   }
 
-  // Start polling log
   startLogPolling();
 }
 
@@ -1676,26 +1677,6 @@ function openModal(title) {
   document.getElementById('modal-dot').className = 'running-dot';
   setModalStatus(title || 'Running...');
   updateRunBtn(true);
-}
-
-async function continueSearch() {
-  try {
-    await fetch(`${API}/health`, { signal: AbortSignal.timeout(1500) });
-  } catch {
-    toast('Start the server first: python3 server.py', true, 5000);
-    return;
-  }
-  openModal('Continuing search — next page...');
-  try {
-    const res = await fetch(`${API}/continue`, { method: 'POST' });
-    const data = await res.json();
-    if (!data.ok) { setModalStatus(data.message || 'Failed'); return; }
-  } catch (e) {
-    toast('Could not reach server: ' + e.message, true);
-    closeModal();
-    return;
-  }
-  startLogPolling();
 }
 
 function closeModal() {
@@ -1712,7 +1693,7 @@ function setModalStatus(msg) {
 }
 
 function updateRunBtn(running) {
-  const btn = document.querySelector('.run-btn');
+  const btn = document.getElementById('run-btn');
   if (running) {
     btn.classList.add('running');
     btn.innerHTML = `<span class="running-dot" style="width:7px;height:7px"></span> Running...`;
@@ -1726,10 +1707,8 @@ function startLogPolling() {
   let lastCount = 0;
   logPoller = setInterval(async () => {
     try {
-      const res = await fetch(`${API}/status`);
-      const data = await res.json();
+      const data = await api('/api/status');
 
-      // Render new log lines
       const win = document.getElementById('log-window');
       const lines = data.log || [];
       if (lines.length > lastCount) {
@@ -1748,7 +1727,6 @@ function startLogPolling() {
         lastCount = lines.length;
       }
 
-      // Agent finished
       if (!data.running && lastCount > 0) {
         stopLogPolling();
         document.getElementById('modal-dot').className = 'idle-dot';
@@ -1770,39 +1748,129 @@ async function reloadJobs() {
   toast('Jobs reloaded ✓');
 }
 
-// ── Settings ─────────────────────────────────────────
-function saveSettings() {
-  const url   = document.getElementById('sb-url').value.trim();
-  const key   = document.getElementById('sb-key').value.trim();
-  const liAt  = document.getElementById('li-at').value.trim();
-  if (url)  localStorage.setItem(SUPABASE_URL_KEY, url);
-  if (key)  localStorage.setItem(SUPABASE_KEY_KEY, key);
-  if (liAt) localStorage.setItem('apex_li_at', liAt);
-  toast('Settings saved ✓ — update LINKEDIN_LI_AT in config.py too');
-  setTimeout(() => loadJobs(), 500);
+// ── Profile management ──────────────────────────────
+async function loadProfiles() {
+  try {
+    const profiles = await api('/api/profiles');
+    return profiles || [];
+  } catch { return []; }
 }
 
-function loadSavedSettings() {
-  const url  = localStorage.getItem(SUPABASE_URL_KEY) || '';
-  const key  = localStorage.getItem(SUPABASE_KEY_KEY) || '';
-  const liAt = localStorage.getItem('apex_li_at') || '';
-  const urlEl  = document.getElementById('sb-url');
-  const keyEl  = document.getElementById('sb-key');
-  const liAtEl = document.getElementById('li-at');
-  if (urlEl  && url)  urlEl.value  = url;
-  if (keyEl  && key)  keyEl.value  = key;
-  if (liAtEl && liAt) liAtEl.value = liAt;
+async function loadProfileSettings() {
+  if (!currentProfileId) return;
+  try {
+    const p = await api(`/api/profiles/${currentProfileId}`);
+    if (!p) return;
+    document.getElementById('set-roles').value = (p.target_roles || []).join('\n');
+    document.getElementById('set-locations').value = (p.locations || []).join('\n');
+    document.getElementById('set-resume').value = p.resume || '';
+    document.getElementById('set-voice').value = p.voice || '';
+    document.getElementById('set-dream').value = (p.dream_companies || []).join('\n');
+    document.getElementById('set-blocklist').value = (p.blocklist || []).join('\n');
+    document.getElementById('set-threshold').value = p.score_threshold || 62;
+    document.getElementById('set-salary').value = p.min_salary || 0;
+    document.getElementById('set-li-at').value = p.linkedin_li_at || '';
+  } catch (e) { console.warn('Load profile failed:', e); }
 }
 
-// ── Demo data ────────────────────────────────────────
-function renderDemoData() {
-  allJobs = [
-    { id:'demo-1', title:'Head of Design', company:'Linear', location:'Remote', source:'linkedin', url:'#', score:91, score_reasoning:'Strong alignment: Linear is a product-led tool company that values design craft deeply. Seniority match. Remote-friendly.', status:'new', found_at: new Date(Date.now()-3600000).toISOString(), drafts:[{id:'d1',cover_letter:'Dear Linear team,\n\nI\'ve watched Linear become the standard for how engineers think about their tools — and I\'ve been waiting for the moment this role would open.\n\nIn 25 years of design leadership, the work I\'m most proud of sits at this exact intersection: tools that engineers and designers actually trust. At Apple and Walmart, I led design for systems used by tens of thousands of internal users — where the bar for craft isn\'t aspirational, it\'s required.\n\nI\'d love to talk about what "Head of Design" means at Linear as you scale, and where I could accelerate that.\n\nVishal', email_subject:'Head of Design — Vishal Mehta', email_body:'Hi,\n\nI\'m Vishal — a design leader with 25 years of experience, most recently contracted to Apple. Linear has been on my shortlist for a while; this role feels like the right moment.\n\nHappy to share more or set up a call whenever works.\n\nVishal', linkedin_note:'Hi — I\'m a design leader with 25 years experience, ex-Apple contractor. Linear has been on my radar for years. Saw the Head of Design role — would love to connect.'}] },
-    { id:'demo-2', title:'Principal UX Designer', company:'Stripe', location:'New York, NY', source:'indeed', url:'#', score:84, score_reasoning:'Excellent fit: Stripe\'s product surface is complex, multi-stakeholder, and engineering-led — exactly where this candidate thrives.', status:'new', found_at: new Date(Date.now()-7200000).toISOString(), drafts:[{id:'d2',cover_letter:'To the Stripe design team,\n\nPayments infrastructure sounds like the least design-friendly domain imaginable — until you look at what Stripe has done with it.\n\nI\'ve spent the past several years at the intersection of engineering complexity and design clarity — most recently at Apple, before that across enterprise and consumer at Walmart scale. The pattern in my work is making the technically intricate feel inevitable to the people who use it.\n\nThat problem, at Stripe\'s scale, is the one I\'d want to be working on.\n\nVishal', email_subject:'Principal UX Designer — Vishal Mehta', email_body:'Hi,\n\nVishal here — UX design leader, 25 years in, currently contracted to Apple. Stripe\'s product design has set the standard for developer tooling for a decade. The Principal UX Designer role caught my eye immediately.\n\nWorth a conversation?\n\nVishal', linkedin_note:'Hi — design leader, 25yr experience, ex-Apple. Stripe\'s product work is something I\'ve admired for years. Saw the Principal UX role — would be glad to connect.'}] },
-    { id:'demo-3', title:'Design Director', company:'Figma', location:'San Francisco, CA', source:'glassdoor', url:'#', score:78, score_reasoning:'Great domain fit. Some uncertainty around whether this is IC or management — JD language is ambiguous. Worth clarifying in outreach.', status:'reviewed', found_at: new Date(Date.now()-86400000).toISOString(), drafts:[{id:'d3',cover_letter:'Hi Figma,\n\nI\'ve built things with Figma for years and advocated for it in organizations that resisted change. So there\'s something poetic about applying here.\n\nMy background is equal parts design leadership and software engineering — which is unusual, and relevant. The teams that build design tools need leaders who can hold both worlds without translating between them.\n\nI\'d like to talk about what the Design Director role is shaping up to be.\n\nVishal', email_subject:'Design Director — Vishal Mehta', email_body:'Hi,\n\nI\'m Vishal — a design leader who\'s been using and advocating for Figma since early days. The Design Director role opened at an interesting time for me. Currently wrapping up a contract at Apple, looking for the right next chapter.\n\nOpen to a chat?\n\nVishal', linkedin_note:'Hi — Figma has been central to my design practice for years. Design Director role opened at a good time. Design leader, 25yr exp, ex-Apple. Would love to connect.'}] },
-  ];
-  updateStats();
-  applyFilter('all');
+async function saveProfile() {
+  if (!currentProfileId) {
+    toast('No profile selected', true);
+    return;
+  }
+  const data = {
+    target_roles:    document.getElementById('set-roles').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    locations:       document.getElementById('set-locations').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    resume:          document.getElementById('set-resume').value.trim(),
+    voice:           document.getElementById('set-voice').value.trim(),
+    dream_companies: document.getElementById('set-dream').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    blocklist:       document.getElementById('set-blocklist').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    score_threshold: parseInt(document.getElementById('set-threshold').value) || 62,
+    min_salary:      parseInt(document.getElementById('set-salary').value) || 0,
+    linkedin_li_at:  document.getElementById('set-li-at').value.trim() || null,
+  };
+  try {
+    await api(`/api/profiles/${currentProfileId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+    toast('Profile saved ✓');
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  }
+}
+
+async function showProfilePicker() {
+  const profiles = await loadProfiles();
+  const el = document.getElementById('profile-picker');
+
+  let html = `<div style="text-align:center;padding:40px 24px;">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gold);margin-bottom:4px;">Apex Agent</div>
+    <div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:32px;">Choose your profile</div>`;
+
+  if (profiles.length) {
+    html += `<div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:0 auto;">`;
+    for (const p of profiles) {
+      html += `<button onclick="selectProfile('${p.id}','${esc(p.name)}')" style="
+        background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+        padding:14px 18px;cursor:pointer;text-align:left;transition:all 0.15s;color:var(--text);
+        font-family:'Geist',sans-serif;font-size:14px;
+      " onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border)'">
+        ${esc(p.name)}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'Geist Mono',monospace">
+          Created ${new Date(p.created_at).toLocaleDateString()}
+        </div>
+      </button>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `<div style="margin-top:24px;display:flex;gap:8px;max-width:320px;margin:24px auto 0;">
+    <input id="new-profile-name" class="field-input" placeholder="Enter your name" style="flex:1;font-size:14px;">
+    <button class="save-btn" onclick="createProfile()" style="width:auto;padding:10px 20px;">Start</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Create a new profile to get started</div>
+  </div>`;
+
+  el.innerHTML = html;
+  el.style.display = 'flex';
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+}
+
+async function createProfile() {
+  const name = document.getElementById('new-profile-name').value.trim();
+  if (!name) { toast('Enter a name', true); return; }
+  try {
+    const p = await api('/api/profiles', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+    if (p && p.id) {
+      selectProfile(p.id, p.name);
+    }
+  } catch (e) {
+    toast('Error creating profile: ' + e.message, true);
+  }
+}
+
+function selectProfile(id, name) {
+  currentProfileId = id;
+  localStorage.setItem('apex_profile_id', id);
+  document.getElementById('profile-picker').style.display = 'none';
+  document.querySelector('.sidebar').style.display = '';
+  document.querySelector('.main').style.display = '';
+  document.getElementById('profile-name-display').textContent = name;
+  loadProfileSettings();
+  loadJobs();
+}
+
+function switchProfile() {
+  currentProfileId = null;
+  localStorage.removeItem('apex_profile_id');
+  allJobs = [];
+  selectedJobId = null;
+  showProfilePicker();
 }
 
 // ── Toast ─────────────────────────────────────────────
@@ -1845,9 +1913,18 @@ function timeAgo(iso) {
 }
 
 // ── Init ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadSavedSettings();
-  loadJobs();
+document.addEventListener('DOMContentLoaded', async () => {
+  if (currentProfileId) {
+    // Verify the saved profile still exists
+    try {
+      const p = await api(`/api/profiles/${currentProfileId}`);
+      if (p && p.id) {
+        selectProfile(p.id, p.name);
+        return;
+      }
+    } catch { /* profile gone, show picker */ }
+  }
+  showProfilePicker();
 });
 </script>
 
