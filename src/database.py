@@ -3,6 +3,7 @@ All Supabase read/write operations for Apex Agent.
 """
 
 import os
+from typing import Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -19,7 +20,7 @@ def job_exists(url: str) -> bool:
     return len(result.data) > 0
 
 
-def insert_job(job: dict) -> str | None:
+def insert_job(job: dict) -> Optional[str]:
     """Insert a new job. Returns the job's UUID or None on failure."""
     db = get_client()
     result = db.table("jobs").insert(job).execute()
