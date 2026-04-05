@@ -3,17 +3,20 @@
 Apex Agent — entry point
 
 Usage:
-  python run.py search      # search + score + draft (default)
-  python run.py email       # poll Gmail + draft replies
-  python run.py schedule    # run search daily at 7am
+  python3 run.py search           # full search (all combos, configured pages)
+  python3 run.py search --page 2  # fetch page 2 of all combos (continue)
+  python3 run.py email            # poll Gmail + draft replies
+  python3 run.py schedule         # run search daily at 7am
 """
 
 import sys
 from dotenv import load_dotenv
 load_dotenv()
 
+
 def main():
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "search"
+    args = sys.argv[1:]
+    cmd = args[0] if args else "search"
 
     if cmd == "search":
         from src.agent import run
@@ -28,7 +31,7 @@ def main():
         threads = poll_gmail_for_recruiter_emails()
         for thread in threads:
             insert_email_thread(thread)
-        console.print(f"[green]✓ {len(threads)} email threads saved for review.[/green]")
+        console.print(f"[green]✓ {len(threads)} email threads saved.[/green]")
 
     elif cmd == "schedule":
         import schedule
@@ -37,14 +40,14 @@ def main():
         from src.agent import run
         console = Console()
         schedule.every().day.at("07:00").do(run)
-        console.print("[bold]Scheduler running. Searches daily at 7am. Ctrl+C to stop.[/bold]")
+        console.print("[bold]Scheduler running — searches daily at 7am. Ctrl+C to stop.[/bold]")
         while True:
             schedule.run_pending()
             time.sleep(60)
 
     else:
         print(f"Unknown command: {cmd}")
-        print("Usage: python run.py [search|email|schedule]")
+        print("Usage: python3 run.py [search|email|schedule]")
 
 
 if __name__ == "__main__":
