@@ -13,18 +13,38 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import track
 
-import config
 from src import search, scorer, drafter, database
 
 console = Console()
 
 
-def run():
+def run(profile_id: str):
+    """Run the full agent pipeline for a given profile."""
+    profile = database.get_profile(profile_id)
+    if not profile:
+        console.print(f"[red]Profile {profile_id} not found.[/red]")
+        return
+
     console.rule("[bold gold1]APEX AGENT[/bold gold1]")
-    console.print()
+    console.print(f"[dim]Profile: {profile['name']}[/dim]\n")
+
+    target_roles = profile.get("target_roles") or []
+    locations = profile.get("locations") or []
+    dream_companies = profile.get("dream_companies") or []
+    blocklist = profile.get("blocklist") or []
+    score_threshold = profile.get("score_threshold") or 62
+
+    if not target_roles or not locations:
+        console.print("[yellow]No target roles or locations configured. Update your profile settings.[/yellow]")
+        return
 
     # ── 1. Search ──────────────────────────────────────
-    raw_jobs = search.search_all()
+    raw_jobs = search.search_all(
+        target_roles=target_roles,
+        locations=locations,
+        blocklist=blocklist,
+        li_at=profile.get("linkedin_li_at"),
+    )
 
     if not raw_jobs:
         console.print("[yellow]No jobs found. Check your config or try later.[/yellow]")
@@ -33,7 +53,7 @@ def run():
     # ── 2. Deduplicate against DB ──────────────────────
     new_jobs = []
     for job in raw_jobs:
-        if job.get("url") and database.job_exists(job["url"]):
+        if job.get("url") and database.job_exists(profile_id, job["url"]):
             continue
         new_jobs.append(job)
 
@@ -47,17 +67,16 @@ def run():
     scored = []
     console.print("[bold]Scoring jobs with Claude...[/bold]")
     for job in track(new_jobs, description="Scoring..."):
-        result = scorer.score_job(job)
+        result = scorer.score_job(job, profile)
         job.update(result)
 
-        # Apply dream company bonus
-        if job.get("company") in config.DREAM_COMPANIES:
+        if job.get("company") in dream_companies:
             job["score"] = min(100, job["score"] + 10)
 
-        if job["score"] >= config.SCORE_THRESHOLD:
+        if job["score"] >= score_threshold:
             scored.append(job)
 
-    console.print(f"\n[green]{len(scored)} jobs above threshold ({config.SCORE_THRESHOLD})[/green]")
+    console.print(f"\n[green]{len(scored)} jobs above threshold ({score_threshold})[/green]")
 
     # ── 4. Preview scored jobs ─────────────────────────
     _print_table(scored)
@@ -67,7 +86,6 @@ def run():
     console.print("\n[bold]Drafting applications...[/bold]")
     for job in track(scored, description="Drafting..."):
         try:
-            # Save job first
             db_job = {
                 "title":           job["title"],
                 "company":         job["company"],
@@ -81,14 +99,13 @@ def run():
                 "score_reasoning": job.get("score_reasoning", ""),
                 "status":          "new",
             }
-            job_id = database.insert_job(db_job)
+            job_id = database.insert_job(profile_id, db_job)
             if not job_id:
                 continue
 
-            # Generate drafts
-            drafts = drafter.draft_all(job)
+            drafts = drafter.draft_all(job, profile)
             drafts["job_id"] = job_id
-            database.insert_draft(drafts)
+            database.insert_draft(profile_id, drafts)
             saved += 1
 
         except Exception as e:
@@ -118,7 +135,3 @@ def _print_table(jobs: list[dict]) -> None:
         )
 
     console.print(table)
-
-
-if __name__ == "__main__":
-    run()
