@@ -1,17 +1,16 @@
 """
-Claude scores each job against your resume and preferences.
+Claude scores each job against a profile's resume and preferences.
 Returns a 0–100 score + plain-English reasoning.
 """
 
 import anthropic
 import json
-import config
 
 _client = anthropic.Anthropic()
 
 
 SCORE_PROMPT = """
-You are a ruthlessly honest career advisor helping a senior design leader evaluate job opportunities.
+You are a ruthlessly honest career advisor helping a candidate evaluate job opportunities.
 
 ## The candidate
 {resume}
@@ -40,8 +39,8 @@ Dream company bonus: Add 10 points if the company is one of: {dream_companies}
 Penalize heavily for:
 - Junior titles or "junior" language in the JD
 - Agency / staff-aug framing
-- "We're a startup of 3" with design director title
-- Required skills that are clearly non-design execution only roles
+- "We're a startup of 3" with director title
+- Required skills that are clearly non-matching execution only roles
 - Salary listed below candidate's minimum
 
 Respond ONLY with a JSON object, no markdown, no explanation outside the JSON:
@@ -54,11 +53,14 @@ Respond ONLY with a JSON object, no markdown, no explanation outside the JSON:
 """
 
 
-def score_job(job: dict) -> dict:
+def score_job(job: dict, profile: dict) -> dict:
     """
-    Returns {"score": int, "reasoning": str, "green_flags": list, "red_flags": list}
-    or {"score": 0, "reasoning": "Scoring failed"} on error.
+    Score a job against a profile.
+    Returns {"score": int, "reasoning": str} or defaults on error.
     """
+    resume = profile.get("resume") or ""
+    dream_companies = profile.get("dream_companies") or []
+
     salary_str = "Not listed"
     if job.get("salary_min"):
         salary_str = f"${job['salary_min']:,}"
@@ -66,25 +68,24 @@ def score_job(job: dict) -> dict:
             salary_str += f"–${job['salary_max']:,}"
 
     prompt = SCORE_PROMPT.format(
-        resume=config.RESUME,
+        resume=resume,
         title=job.get("title", ""),
         company=job.get("company", ""),
         location=job.get("location", ""),
         salary=salary_str,
         source=job.get("source", ""),
-        description=(job.get("description", "") or "")[:4000],  # cap tokens
-        dream_companies=", ".join(config.DREAM_COMPANIES),
+        description=(job.get("description", "") or "")[:4000],
+        dream_companies=", ".join(dream_companies),
     )
 
     try:
         response = _client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-sonnet-4-5-20250514",
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )
         text = response.content[0].text.strip()
 
-        # Strip any accidental markdown fences
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):

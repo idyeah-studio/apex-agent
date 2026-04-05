@@ -5,15 +5,12 @@ Source: LinkedIn public job search only.
 
 import time
 import random
-from typing import Optional
 from urllib.parse import urlencode
 
 import requests
 from bs4 import BeautifulSoup
 from rich.console import Console
 from rich.progress import track
-
-import config
 
 console = Console()
 
@@ -33,15 +30,27 @@ HEADERS = {
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
 
+RESULTS_PER_SEARCH = 50
 
-def search_all() -> list[dict]:
+
+def search_all(
+    target_roles: list[str],
+    locations: list[str],
+    blocklist: list[str] | None = None,
+    li_at: str | None = None,
+) -> list[dict]:
+    blocklist = blocklist or []
     all_jobs: list[dict] = []
     seen_urls: set[str] = set()
 
+    # Set LinkedIn cookie if provided
+    if li_at:
+        SESSION.cookies.set("li_at", li_at, domain=".linkedin.com")
+
     combos = [
         (role, location)
-        for role in config.TARGET_ROLES
-        for location in config.LOCATIONS
+        for role in target_roles
+        for location in locations
     ]
 
     console.print(f"\n[bold]🔍 Searching LinkedIn — {len(combos)} role × location combinations...[/bold]\n")
@@ -54,7 +63,7 @@ def search_all() -> list[dict]:
                 url = job.get("url", "")
                 if not url or url in seen_urls:
                     continue
-                if job.get("company", "") in config.BLOCKLIST:
+                if job.get("company", "") in blocklist:
                     continue
                 seen_urls.add(url)
                 all_jobs.append(job)
@@ -64,7 +73,6 @@ def search_all() -> list[dict]:
         except Exception as e:
             console.print(f"[yellow]  ⚠ LinkedIn error for '{role}' / '{location}': {e}[/yellow]")
 
-        # Respectful delay — LinkedIn rate limits aggressively
         time.sleep(random.uniform(3.0, 6.0))
 
     console.print(f"\n[green]✓ Found {len(all_jobs)} unique jobs[/green]\n")
@@ -75,8 +83,8 @@ def _search_linkedin(role: str, location: str) -> list[dict]:
     params = {
         "keywords": role,
         "location": location,
-        "f_TPR":    "r259200",  # posted in last 3 days
-        "f_E":      "4,5,6",    # mid-senior, director, executive
+        "f_TPR":    "r259200",
+        "f_E":      "4,5,6",
         "start":    "0",
     }
     url = "https://www.linkedin.com/jobs/search/?" + urlencode(params)
@@ -98,7 +106,7 @@ def _search_linkedin(role: str, location: str) -> list[dict]:
 
     cards = soup.select("div.base-card, li.jobs-search__results-list > div")
 
-    for card in cards[:config.RESULTS_PER_SEARCH]:
+    for card in cards[:RESULTS_PER_SEARCH]:
         title_el   = card.select_one("h3.base-search-card__title, h3.job-search-card__title")
         company_el = card.select_one("h4.base-search-card__subtitle, a.job-search-card__subtitle-link")
         loc_el     = card.select_one("span.job-search-card__location")
@@ -112,7 +120,7 @@ def _search_linkedin(role: str, location: str) -> list[dict]:
         if not title or not link:
             continue
 
-        link = link.split("?")[0]  # strip tracking params
+        link = link.split("?")[0]
 
         jobs.append({
             "title":       title,

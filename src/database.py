@@ -1,5 +1,6 @@
 """
 All Supabase read/write operations for Apex Agent.
+Every query is scoped to a profile_id.
 """
 
 import os
@@ -9,48 +10,56 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def get_client() -> Client:
     return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 
-def job_exists(url: str) -> bool:
-    """Check if a job URL is already in the database."""
+# ── Profiles ─────────────────────────────────────────
+
+def get_profile(profile_id: str) -> Optional[dict]:
     db = get_client()
-    result = db.table("jobs").select("id").eq("url", url).execute()
+    result = db.table("profiles").select("*").eq("id", profile_id).execute()
+    return result.data[0] if result.data else None
+
+
+# ── Jobs ─────────────────────────────────────────────
+
+def job_exists(profile_id: str, url: str) -> bool:
+    """Check if a job URL is already in the database for this profile."""
+    db = get_client()
+    result = (
+        db.table("jobs")
+        .select("id")
+        .eq("profile_id", profile_id)
+        .eq("url", url)
+        .execute()
+    )
     return len(result.data) > 0
 
 
-def insert_job(job: dict) -> Optional[str]:
-    """Insert a new job. Returns the job's UUID or None on failure."""
+def insert_job(profile_id: str, job: dict) -> Optional[str]:
+    """Insert a new job scoped to a profile. Returns the job's UUID or None."""
     db = get_client()
+    job["profile_id"] = profile_id
     result = db.table("jobs").insert(job).execute()
     if result.data:
         return result.data[0]["id"]
     return None
 
 
-def insert_draft(draft: dict) -> None:
+def insert_draft(profile_id: str, draft: dict) -> None:
     db = get_client()
+    draft["profile_id"] = profile_id
     db.table("drafts").insert(draft).execute()
 
 
-def get_jobs_by_status(status: str) -> list[dict]:
+def get_all_jobs(profile_id: str) -> list[dict]:
     db = get_client()
     result = (
         db.table("jobs")
         .select("*, drafts(*)")
-        .eq("status", status)
-        .order("score", desc=True)
-        .execute()
-    )
-    return result.data or []
-
-
-def get_all_jobs() -> list[dict]:
-    db = get_client()
-    result = (
-        db.table("jobs")
-        .select("*, drafts(*)")
+        .eq("profile_id", profile_id)
         .order("found_at", desc=True)
         .execute()
     )
@@ -62,6 +71,8 @@ def update_job_status(job_id: str, status: str) -> None:
     db.table("jobs").update({"status": status}).eq("id", job_id).execute()
 
 
+# ── Drafts ───────────────────────────────────────────
+
 def approve_draft(draft_id: str) -> None:
     db = get_client()
     db.table("drafts").update({"approved": True}).eq("id", draft_id).execute()
@@ -72,33 +83,20 @@ def update_draft(draft_id: str, fields: dict) -> None:
     db.table("drafts").update({**fields, "edited": True}).eq("id", draft_id).execute()
 
 
-def get_pipeline_stats() -> dict:
-    """Return counts per status for the dashboard header."""
-    db = get_client()
-    result = db.table("jobs").select("status").execute()
-    rows = result.data or []
-    stats = {
-        "new": 0, "reviewed": 0, "applied": 0,
-        "interviewing": 0, "offer": 0, "rejected": 0,
-    }
-    for row in rows:
-        s = row.get("status", "new")
-        if s in stats:
-            stats[s] += 1
-    stats["total"] = len(rows)
-    return stats
+# ── Email threads ────────────────────────────────────
 
-
-def insert_email_thread(thread: dict) -> None:
+def insert_email_thread(profile_id: str, thread: dict) -> None:
     db = get_client()
+    thread["profile_id"] = profile_id
     db.table("email_threads").insert(thread).execute()
 
 
-def get_pending_email_replies() -> list[dict]:
+def get_pending_email_replies(profile_id: str) -> list[dict]:
     db = get_client()
     result = (
         db.table("email_threads")
         .select("*")
+        .eq("profile_id", profile_id)
         .eq("reply_approved", False)
         .is_("replied_at", "null")
         .order("received_at", desc=True)
