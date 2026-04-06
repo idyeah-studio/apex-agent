@@ -3,10 +3,11 @@
 --  Paste into: Supabase → SQL Editor → Run
 -- ════════════════════════════════════════════
 
--- ── Profiles (one per user) ───────────────────────
+-- ── Profiles (one per user, linked to Supabase Auth) ──
 create table if not exists profiles (
   id              uuid primary key default gen_random_uuid(),
-  name            text unique not null,
+  user_id         uuid references auth.users(id) on delete cascade,
+  name            text not null,
   resume          text,
   target_roles    jsonb default '[]'::jsonb,     -- ["Staff Designer", "Head of Design"]
   locations       jsonb default '[]'::jsonb,     -- ["Remote", "San Francisco, CA"]
@@ -85,6 +86,7 @@ create trigger jobs_updated_at
   for each row execute function update_updated_at();
 
 -- Indexes
+create unique index if not exists profiles_user_id_idx on profiles(user_id);
 create index if not exists jobs_profile_idx on jobs(profile_id);
 create index if not exists jobs_status_idx on jobs(status);
 create index if not exists jobs_score_idx on jobs(score desc);
