@@ -11,21 +11,21 @@
 <style>
 /* ═══ TOKENS ════════════════════════════════════════════ */
 :root {
-  --bg:           #0B0B0E;
-  --surface:      #111116;
-  --surface-2:    #18181F;
-  --border:       rgba(255,255,255,0.06);
-  --border-hover: rgba(255,255,255,0.12);
-  --gold:         #C9A96E;
-  --gold-dim:     #8A7150;
-  --gold-glow:    rgba(201,169,110,0.12);
-  --text:         #E8E8EC;
-  --text-dim:     #9B9BAA;
-  --text-muted:   #6E6E80;
-  --green:        #4ADE80;
-  --red:          #F87171;
-  --blue:         #60A5FA;
-  --amber:        #FBBF24;
+  --bg:           #F5F5F7;
+  --surface:      #FFFFFF;
+  --surface-2:    #F0F0F3;
+  --border:       rgba(0,0,0,0.08);
+  --border-hover: rgba(0,0,0,0.15);
+  --gold:         #9A7B4F;
+  --gold-dim:     #B5956A;
+  --gold-glow:    rgba(154,123,79,0.10);
+  --text:         #1A1A1E;
+  --text-dim:     #5C5C6B;
+  --text-muted:   #9090A0;
+  --green:        #16A34A;
+  --red:          #DC2626;
+  --blue:         #2563EB;
+  --amber:        #D97706;
   --radius:       8px;
   --radius-lg:    14px;
 }
@@ -139,7 +139,7 @@ body {
 .run-btn {
   width: 100%;
   background: var(--gold);
-  color: #0B0B0E;
+  color: #FFFFFF;
   border: none;
   border-radius: var(--radius);
   padding: 10px 16px;
@@ -155,7 +155,7 @@ body {
 }
 
 .run-btn:hover {
-  background: #D9B97E;
+  background: #8A6B3F;
   transform: translateY(-1px);
   box-shadow: 0 4px 20px rgba(201,169,110,0.3);
 }
@@ -791,7 +791,7 @@ textarea.draft-text:focus {
 
 .save-btn {
   background: var(--gold);
-  color: #0B0B0E;
+  color: #FFFFFF;
   border: none;
   border-radius: var(--radius);
   padding: 10px;
@@ -802,12 +802,12 @@ textarea.draft-text:focus {
   transition: all 0.18s;
   margin-top: 4px;
 }
-.save-btn:hover { background: #D9B97E; }
+.save-btn:hover { background: #8A6B3F; }
 
 /* ─── Agent log modal ──────────────────────────────────── */
 .modal-backdrop {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.3);
   backdrop-filter: blur(4px);
   z-index: 100;
   display: flex;
@@ -862,11 +862,11 @@ textarea.draft-text:focus {
 }
 .modal-status { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
 .modal-refresh-btn {
-  background: var(--gold); color: #0B0B0E; border: none;
+  background: var(--gold); color: #FFFFFF; border: none;
   border-radius: var(--radius); padding: 7px 16px; font-size: 12px;
   font-family: 'Geist', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s;
 }
-.modal-refresh-btn:hover { background: #D9B97E; }
+.modal-refresh-btn:hover { background: #8A6B3F; }
 .modal-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .run-btn.running {
   background: var(--surface-2); color: var(--green);
@@ -1219,7 +1219,7 @@ textarea.draft-text:focus {
         <circle cx="8" cy="8" r="7"/>
         <path d="M8 5v4M8 11v.5"/>
       </svg>
-      Email polling requires Gmail OAuth. Run <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">python run.py email</code> from the terminal — drafts will appear here.
+      Email polling requires Gmail OAuth. Run <code style="background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:3px;">python run.py email</code> from the terminal — drafts will appear here.
     </div>
     <div id="email-list">
       <div class="list-empty">
@@ -2177,7 +2177,7 @@ function toast(msg, isError=false, duration=2500) {
   Object.assign(el.style, {
     position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
     background: isError ? 'var(--red)' : 'var(--gold)',
-    color: '#0B0B0E', padding:'10px 18px', borderRadius:'8px',
+    color: '#FFFFFF', padding:'10px 18px', borderRadius:'8px',
     fontSize:'13px', fontFamily:'Geist,sans-serif', fontWeight:'500',
     boxShadow:'0 4px 20px rgba(0,0,0,0.4)',
     animation:'fadeSlideIn 0.2s ease',
