@@ -125,7 +125,7 @@ def _draft_cover_letter(job: dict, profile: dict) -> str:
     )
     try:
         response = _client.messages.create(
-            model="claude-sonnet-4-5-20250514",
+            model="claude-3-haiku-20240307",
             max_tokens=800,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -149,7 +149,7 @@ def _draft_email(job: dict, profile: dict) -> tuple[str, str]:
     )
     try:
         response = _client.messages.create(
-            model="claude-sonnet-4-5-20250514",
+            model="claude-3-haiku-20240307",
             max_tokens=400,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -179,7 +179,7 @@ def _draft_linkedin_note(job: dict, profile: dict) -> str:
     )
     try:
         response = _client.messages.create(
-            model="claude-sonnet-4-5-20250514",
+            model="claude-3-haiku-20240307",
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}],
         )
