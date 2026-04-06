@@ -20,8 +20,8 @@
   --gold-dim:     #8A7150;
   --gold-glow:    rgba(201,169,110,0.12);
   --text:         #E8E8EC;
-  --text-dim:     #6B6B78;
-  --text-muted:   #3E3E4A;
+  --text-dim:     #9B9BAA;
+  --text-muted:   #6E6E80;
   --green:        #4ADE80;
   --red:          #F87171;
   --blue:         #60A5FA;
@@ -315,7 +315,7 @@ body {
   cursor: pointer;
   transition: all 0.18s ease;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   animation: cardIn 0.3s ease both;
 }
 
@@ -482,6 +482,7 @@ body {
 .status-interviewing { color: var(--gold);  border-color: rgba(201,169,110,0.3); background: var(--gold-glow); }
 .status-offer        { color: #A78BFA;      border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
 .status-rejected     { color: var(--text-muted); border-color: var(--border);    background: transparent; }
+.status-skipped      { color: var(--text-muted); border-color: var(--border);    background: transparent; }
 
 /* ─── Detail Panel ──────────────────────────────────────── */
 .detail-panel {
@@ -888,6 +889,61 @@ textarea.draft-text:focus {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 2px; }
 
+/* ═══ INLINE AGENT LOG ═══════════════════════════════ */
+.agent-log-inline {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.agent-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.agent-log-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.agent-log-stop {
+  background: transparent;
+  border: 1px solid rgba(248,113,113,0.3);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.agent-log-stop:hover { background: rgba(248,113,113,0.08); }
+
+.agent-log-lines {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+.agent-log-lines .log-line { display: block; }
+.agent-log-lines .log-line.success { color: var(--green); }
+.agent-log-lines .log-line.warning { color: var(--amber); }
+.agent-log-lines .log-line.error   { color: var(--red); }
+
 /* ═══ MOBILE HAMBURGER ═══════════════════════════════ */
 .mobile-toggle {
   display: none;
@@ -1095,18 +1151,18 @@ textarea.draft-text:focus {
       </div>
       <div class="stat-divider"></div>
       <div class="stat">
+        <div class="stat-value" id="stat-reviewed">–</div>
+        <div class="stat-label">Reviewed</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
         <div class="stat-value" id="stat-applied">–</div>
         <div class="stat-label">Applied</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat">
-        <div class="stat-value" id="stat-interviewing">–</div>
-        <div class="stat-label">Interviews</div>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat">
-        <div class="stat-value" id="stat-offer">–</div>
-        <div class="stat-label">Offers</div>
+        <div class="stat-value" id="stat-skipped">–</div>
+        <div class="stat-label">Skipped</div>
       </div>
     </div>
   </div>
@@ -1128,16 +1184,12 @@ textarea.draft-text:focus {
       <button class="filter-btn" data-status="applied" onclick="filterJobs('applied', this)">
         <span class="filter-dot" style="color:var(--green)"></span> Applied
       </button>
-      <button class="filter-btn" data-status="interviewing" onclick="filterJobs('interviewing', this)">
-        <span class="filter-dot" style="color:var(--gold)"></span> Interviewing
-      </button>
-      <button class="filter-btn" data-status="offer" onclick="filterJobs('offer', this)">
-        <span class="filter-dot" style="color:#A78BFA"></span> Offers
-      </button>
-      <button class="filter-btn" data-status="rejected" onclick="filterJobs('rejected', this)">
-        <span class="filter-dot" style="color:var(--text-muted)"></span> Rejected
+      <button class="filter-btn" data-status="skipped" onclick="filterJobs('skipped', this)">
+        <span class="filter-dot" style="color:var(--text-muted)"></span> Skipped
       </button>
       <div class="filter-spacer"></div>
+      <button class="filter-btn" onclick="scoreAllJobs()" id="score-all-btn" style="color:var(--gold);border-color:var(--gold-dim)">★ Score All</button>
+      <button class="filter-btn" onclick="clearJobs()" style="color:var(--red);border-color:rgba(248,113,113,0.3)">Clear All</button>
       <input class="search-box" type="text" placeholder="Search jobs..." oninput="searchJobs(this.value)">
     </div>
 
@@ -1243,27 +1295,7 @@ textarea.draft-text:focus {
 
 </main>
 
-<!-- ═══ AGENT LOG MODAL ════════════════════════════════ -->
-<div id="agent-modal" class="modal-backdrop" style="display:none" onclick="closeModalOutside(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">
-        <span id="modal-dot" class="idle-dot"></span>
-        Agent Run Log
-      </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="log-window" id="log-window">
-      <span class="log-line" style="color:var(--text-muted)">Waiting to start...</span>
-    </div>
-    <div class="modal-footer">
-      <div class="modal-status" id="modal-status">Idle</div>
-      <button class="modal-refresh-btn" onclick="closeModal()" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);">
-        Close
-      </button>
-    </div>
-  </div>
-</div>
+<!-- modal removed — agent output streams inline -->
 
 <script>
 // ═══════════════════════════════════════════════════
@@ -1305,26 +1337,33 @@ async function loadJobs() {
   }
 
   try {
-    const jobs = await api(`/api/profiles/${currentProfileId}/jobs`);
+    var jobs = await api('/api/profiles/' + currentProfileId + '/jobs');
     allJobs = jobs || [];
-    updateStats();
-    applyFilter(activeFilter);
   } catch (e) {
-    console.warn('Load failed:', e.message);
+    console.warn('Load failed:', e);
     allJobs = [];
-    updateStats();
-    applyFilter('all');
   }
+  updateStats();
+  applyFilter(activeFilter);
 }
 
 function updateStats() {
-  const counts = { new:0, reviewed:0, applied:0, interviewing:0, offer:0, rejected:0 };
-  allJobs.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
+  var counts = { new:0, reviewed:0, applied:0, skipped:0 };
+  allJobs.forEach(function(j) {
+    var s = j.status || 'new';
+    if (counts[s] !== undefined) counts[s]++;
+  });
+  var total = allJobs.length;
+  var unscored = allJobs.filter(function(j) { return j.score == null && j.status !== 'skipped'; }).length;
   document.getElementById('stat-new').textContent = counts.new;
+  document.getElementById('stat-reviewed').textContent = counts.reviewed;
   document.getElementById('stat-applied').textContent = counts.applied;
-  document.getElementById('stat-interviewing').textContent = counts.interviewing;
-  document.getElementById('stat-offer').textContent = counts.offer;
-  document.getElementById('nav-total').textContent = allJobs.length;
+  document.getElementById('stat-skipped').textContent = counts.skipped;
+  document.getElementById('nav-total').textContent = total;
+  var titleEl = document.getElementById('view-title');
+  if (titleEl && titleEl.innerHTML.indexOf('Pipeline') !== -1) {
+    titleEl.innerHTML = 'Pipeline <span>' + total + ' jobs' + (unscored ? ' \u00B7 ' + unscored + ' unscored' : '') + '</span>';
+  }
 }
 
 function applyFilter(status) {
@@ -1363,36 +1402,64 @@ function renderJobList(jobs) {
     return;
   }
 
-  el.innerHTML = jobs.map((job, i) => {
-    const score = job.score || 0;
-    const scoreClass = score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : 'score-low';
-    const cardClass = score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : '';
-    const srcClass = `src-${(job.source || 'other').toLowerCase().replace(' ','_')}`;
-    const isSelected = job.id === selectedJobId ? 'selected' : '';
-    const delay = Math.min(i * 0.03, 0.3);
+  el.innerHTML = jobs.map(function(job, i) {
+    var hasScore = job.score != null;
+    var score = job.score || 0;
+    var scoreClass = !hasScore ? 'score-low' : score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : 'score-low';
+    var cardClass = !hasScore ? '' : score >= 80 ? 'score-high' : score >= 65 ? 'score-mid' : '';
+    var srcClass = 'src-' + (job.source || 'other').toLowerCase().replace(' ','_');
+    var isSelected = job.id === selectedJobId ? 'selected' : '';
+    var delay = Math.min(i * 0.03, 0.3);
 
-    return `<div class="job-card ${cardClass} ${isSelected}"
-              onclick="selectJob('${job.id}')"
-              style="animation-delay:${delay}s">
-      <div class="card-top">
-        <div>
-          <div class="card-title">${esc(job.title)}</div>
-          <div class="card-company">${esc(job.company)} · ${esc(job.location || '')}</div>
-        </div>
-        <div class="score-badge ${scoreClass}">${score}</div>
-      </div>
-      <div class="card-meta">
-        <span class="meta-chip"><span class="source-dot ${srcClass}"></span>${esc(job.source || '')}</span>
-        <span class="meta-chip">${timeAgo(job.found_at)}</span>
-        <span class="status-pill status-${job.status}">${job.status}</span>
-      </div>
-      ${job.score_reasoning ? `<div class="card-reasoning">${esc(job.score_reasoning)}</div>` : ''}
-      <div class="card-actions">
-        <button class="action-btn approve" onclick="event.stopPropagation();quickApprove('${job.id}')">✓ Approve</button>
-        <button class="action-btn" onclick="event.stopPropagation();selectJob('${job.id}');setTab('cover')">Review</button>
-        <button class="action-btn skip" onclick="event.stopPropagation();skipJob('${job.id}')">✕ Skip</button>
-      </div>
-    </div>`;
+    var salaryStr = '';
+    if (job.salary_min) {
+      salaryStr = '$' + Math.round(job.salary_min/1000) + 'k';
+      if (job.salary_max) salaryStr += '\u2013$' + Math.round(job.salary_max/1000) + 'k';
+    }
+
+    var posted = timeAgo(job.found_at);
+    var loc = esc(job.location || 'Unknown');
+    var src = esc(job.source || '');
+    var title = esc(job.title);
+    var company = esc(job.company);
+    var reasoning = job.score_reasoning ? '<div class="card-reasoning">' + esc(job.score_reasoning) + '</div>' : '';
+    var jid = job.id;
+
+    var scoreBadge = hasScore
+      ? '<div class="score-badge ' + scoreClass + '">' + score + '</div>'
+      : '<div class="score-badge score-low" style="font-size:10px;color:var(--text-muted)">\u2014</div>';
+
+    var actions = '';
+    if (hasScore) {
+      actions = '<button class="action-btn approve" onclick="event.stopPropagation();quickApprove(\'' + jid + '\')">Approve</button>'
+        + '<button class="action-btn" onclick="event.stopPropagation();selectJob(\'' + jid + '\');setTab(\'cover\')">Review</button>';
+    } else {
+      actions = '<button class="action-btn" id="scoring-' + jid + '" onclick="event.stopPropagation();scoreJob(\'' + jid + '\')" style="color:var(--gold);border-color:var(--gold-dim)">Score</button>';
+    }
+    actions += '<button class="action-btn skip" onclick="event.stopPropagation();skipJob(\'' + jid + '\')">Skip</button>';
+
+    var salaryChip = salaryStr ? '<span class="meta-chip" style="color:var(--green)">' + salaryStr + '</span>' : '';
+
+    return '<div class="job-card ' + cardClass + ' ' + isSelected + '"'
+      + ' onclick="selectJob(\'' + jid + '\')"'
+      + ' style="animation-delay:' + delay + 's">'
+      + '<div class="card-top">'
+      +   '<div style="flex:1;min-width:0">'
+      +     '<div class="card-title">' + title + '</div>'
+      +     '<div class="card-company">' + company + '</div>'
+      +   '</div>'
+      +   scoreBadge
+      + '</div>'
+      + '<div class="card-meta">'
+      +   '<span class="meta-chip">' + loc + '</span>'
+      +   '<span class="meta-chip"><span class="source-dot ' + srcClass + '"></span>' + src + '</span>'
+      +   '<span class="meta-chip">' + posted + '</span>'
+      +   salaryChip
+      +   '<span class="status-pill status-' + job.status + '">' + job.status + '</span>'
+      + '</div>'
+      + reasoning
+      + '<div class="card-actions">' + actions + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -1532,24 +1599,118 @@ async function approveJob(jobId, draftId) {
 }
 
 async function skipJob(jobId) {
-  await updateStatus(jobId, 'rejected');
+  try {
+    await updateStatus(jobId, 'skipped');
+  } catch(e) { toast('Error skipping: ' + e.message, true); return; }
   toast('Skipped');
-  const idx = allJobs.findIndex(j => j.id === jobId);
-  if (idx !== -1) allJobs[idx].status = 'rejected';
+  var idx = allJobs.findIndex(function(j) { return j.id === jobId; });
+  if (idx !== -1) allJobs[idx].status = 'skipped';
   selectedJobId = null;
-  document.getElementById('detail-panel').innerHTML = `
-    <div class="panel-empty">
-      <div class="panel-empty-icon">◈</div>
-      <div class="panel-empty-text">Select a job to review</div>
-    </div>`;
+  document.getElementById('detail-panel').innerHTML =
+    '<div class="panel-empty">'
+    + '<div class="panel-empty-icon">\u25C8</div>'
+    + '<div class="panel-empty-text">Select a job to review</div>'
+    + '</div>';
   applyFilter(activeFilter);
+}
+
+// ── Scoring ─────────────────────────────────────────
+async function checkProfileReady() {
+  if (!currentProfileId) return false;
+  try {
+    const p = await api(`/api/profiles/${currentProfileId}`);
+    if (!p || !p.resume || !p.resume.trim()) {
+      toast('Add your resume in Settings before scoring', true, 4000);
+      setView('settings');
+      setTimeout(() => document.getElementById('set-resume')?.focus(), 300);
+      return false;
+    }
+    return true;
+  } catch { return false; }
+}
+
+async function scoreJob(jobId) {
+  if (!(await checkProfileReady())) return;
+
+  const btn = document.getElementById(`scoring-${jobId}`);
+  if (btn) { btn.textContent = 'Scoring...'; btn.disabled = true; }
+
+  try {
+    await api(`/api/jobs/${jobId}/score`, {
+      method: 'POST',
+      body: JSON.stringify({ profile_id: currentProfileId }),
+    });
+
+    // Poll until score appears (up to 60s)
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const jobs = await api(`/api/profiles/${currentProfileId}/jobs`);
+      const updated = jobs.find(j => j.id === jobId);
+      if (updated && updated.score != null) {
+        const idx = allJobs.findIndex(j => j.id === jobId);
+        if (idx !== -1) allJobs[idx] = updated;
+        applyFilter(activeFilter);
+        if (selectedJobId === jobId) renderDetailPanel(updated);
+        toast(`Scored: ${updated.score}/100`);
+        return;
+      }
+    }
+    toast('Scoring timed out — try refreshing', true);
+  } catch (e) {
+    toast('Scoring failed: ' + e.message, true);
+  } finally {
+    if (btn) { btn.textContent = '★ Score'; btn.disabled = false; }
+  }
+}
+
+async function scoreAllJobs() {
+  if (!(await checkProfileReady())) return;
+
+  const unscored = allJobs.filter(j => j.score == null && j.status !== 'skipped');
+  if (!unscored.length) {
+    toast('All jobs are already scored');
+    return;
+  }
+
+  const btn = document.getElementById('score-all-btn');
+  btn.textContent = `Scoring 0/${unscored.length}...`;
+  btn.disabled = true;
+
+  try {
+    await api('/api/score-all', {
+      method: 'POST',
+      body: JSON.stringify({ profile_id: currentProfileId }),
+    });
+
+    // Poll for progress
+    let lastScored = 0;
+    for (let i = 0; i < 300; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const jobs = await api(`/api/profiles/${currentProfileId}/jobs`);
+      allJobs = jobs || [];
+      const scored = allJobs.filter(j => j.score != null).length;
+      const remaining = allJobs.filter(j => j.score == null && j.status !== 'skipped').length;
+      btn.textContent = `Scoring... ${scored - lastScored > 0 ? scored : ''}/${unscored.length}`;
+      updateStats();
+      applyFilter(activeFilter);
+      if (remaining === 0) {
+        toast(`All ${scored} jobs scored`);
+        break;
+      }
+    }
+  } catch (e) {
+    toast('Scoring failed: ' + e.message, true);
+  } finally {
+    btn.textContent = '★ Score All';
+    btn.disabled = false;
+  }
 }
 
 async function updateStatus(jobId, status) {
   try {
-    await api(`/api/jobs/${jobId}`, {
+    await api('/api/jobs/' + jobId, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: status }),
     });
     const job = allJobs.find(j => j.id === jobId);
     if (job) job.status = status;
@@ -1641,16 +1802,19 @@ async function skipReply(id) {
   } catch(e) { toast('Error: '+e.message, true); }
 }
 
-// ── Agent runner ──────────────────────────────────────
+// ── Agent runner (inline) ─────────────────────────────
 let logPoller = null;
+let agentRunning = false;
 
 async function runAgent() {
   if (!currentProfileId) {
     toast('Create a profile first in Settings', true, 4000);
     return;
   }
-
-  openModal();
+  if (agentRunning) {
+    toast('Agent is already running', true);
+    return;
+  }
 
   try {
     const data = await api('/api/run', {
@@ -1658,38 +1822,62 @@ async function runAgent() {
       body: JSON.stringify({ profile_id: currentProfileId }),
     });
     if (!data.ok) {
-      setModalStatus(data.message || 'Failed to start');
+      toast(data.message || 'Failed to start', true);
       return;
     }
   } catch (e) {
     toast('Could not start agent: ' + e.message, true);
-    closeModal();
     return;
   }
 
+  agentRunning = true;
+  updateRunBtn(true);
+  showInlineLog();
   startLogPolling();
 }
 
-function openModal(title) {
-  document.getElementById('agent-modal').style.display = 'flex';
-  document.getElementById('log-window').innerHTML = '';
-  document.getElementById('reload-btn').disabled = true;
-  document.getElementById('modal-dot').className = 'running-dot';
-  setModalStatus(title || 'Running...');
-  updateRunBtn(true);
+function showInlineLog() {
+  const el = document.getElementById('job-list');
+  el.innerHTML = `<div class="agent-log-inline">
+    <div class="agent-log-header">
+      <div class="agent-log-title">
+        <span class="running-dot"></span> Agent Running
+      </div>
+      <button class="agent-log-stop" onclick="stopAgent()">Stop & Show Results</button>
+    </div>
+    <div class="agent-log-lines" id="inline-log"></div>
+  </div>`;
 }
 
-function closeModal() {
-  document.getElementById('agent-modal').style.display = 'none';
+async function stopAgent() {
+  try { await api('/api/stop', { method: 'POST' }); } catch(e) {}
   stopLogPolling();
+  agentRunning = false;
+  updateRunBtn(false);
+  // Small delay to let server finish saving in-flight jobs
+  await new Promise(function(r) { setTimeout(r, 1000); });
+  await loadJobs();
+  var count = allJobs.length;
+  toast(count ? count + ' jobs found so far' : 'No jobs saved yet — try running longer');
 }
 
-function closeModalOutside(e) {
-  if (e.target === document.getElementById('agent-modal')) closeModal();
-}
-
-function setModalStatus(msg) {
-  document.getElementById('modal-status').textContent = msg;
+async function clearJobs() {
+  if (!currentProfileId) return;
+  if (!confirm('Delete all jobs and start fresh?')) return;
+  try {
+    await api('/api/clear-jobs', {
+      method: 'POST',
+      body: JSON.stringify({ profile_id: currentProfileId }),
+    });
+    allJobs = [];
+    filteredJobs = [];
+    selectedJobId = null;
+    updateStats();
+    applyFilter('all');
+    toast('All jobs cleared');
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
 }
 
 function updateRunBtn(running) {
@@ -1708,8 +1896,9 @@ function startLogPolling() {
   logPoller = setInterval(async () => {
     try {
       const data = await api('/api/status');
+      const logEl = document.getElementById('inline-log');
+      if (!logEl) return; // user navigated away
 
-      const win = document.getElementById('log-window');
       const lines = data.log || [];
       if (lines.length > lastCount) {
         const newLines = lines.slice(lastCount);
@@ -1720,24 +1909,29 @@ function startLogPolling() {
              line.includes('⚠') ? ' warning' :
              line.includes('Error') || line.includes('error') ? ' error' : '');
           span.textContent = line;
-          win.appendChild(span);
-          win.appendChild(document.createElement('br'));
+          logEl.appendChild(span);
+          logEl.appendChild(document.createElement('br'));
         });
-        win.scrollTop = win.scrollHeight;
+        // Scroll the job-list container
+        const container = logEl.closest('.agent-log-inline');
+        if (container) container.scrollTop = container.scrollHeight;
         lastCount = lines.length;
       }
 
+      // Agent finished
       if (!data.running && lastCount > 0) {
         stopLogPolling();
-        document.getElementById('modal-dot').className = 'idle-dot';
-        setModalStatus(data.last_run ? `Finished · ${new Date(data.last_run).toLocaleTimeString()}` : 'Finished');
+        agentRunning = false;
         updateRunBtn(false);
-        // Auto-load results and close modal after a brief pause
-        await loadJobs();
-        setTimeout(() => {
-          closeModal();
-          toast(`${allJobs.length} jobs in pipeline`);
-        }, 1500);
+
+        // Replace log header with "done"
+        const header = document.querySelector('.agent-log-title');
+        if (header) header.innerHTML = `<span class="idle-dot"></span> Done — ${data.jobs_found || 0} jobs found`;
+        const stopBtn = document.querySelector('.agent-log-stop');
+        if (stopBtn) { stopBtn.textContent = 'Show Results'; stopBtn.onclick = () => loadJobs(); }
+
+        // Auto-switch to results after 2s
+        setTimeout(() => loadJobs(), 2000);
       }
     } catch { /* server might be restarting */ }
   }, 1500);
