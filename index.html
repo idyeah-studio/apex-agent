@@ -1258,8 +1258,8 @@ textarea.draft-text:focus {
     </div>
     <div class="modal-footer">
       <div class="modal-status" id="modal-status">Idle</div>
-      <button class="modal-refresh-btn" id="reload-btn" onclick="reloadJobs()" disabled>
-        Reload Jobs
+      <button class="modal-refresh-btn" onclick="closeModal()" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);">
+        Close
       </button>
     </div>
   </div>
@@ -1731,8 +1731,13 @@ function startLogPolling() {
         stopLogPolling();
         document.getElementById('modal-dot').className = 'idle-dot';
         setModalStatus(data.last_run ? `Finished · ${new Date(data.last_run).toLocaleTimeString()}` : 'Finished');
-        document.getElementById('reload-btn').disabled = false;
         updateRunBtn(false);
+        // Auto-load results and close modal after a brief pause
+        await loadJobs();
+        setTimeout(() => {
+          closeModal();
+          toast(`${allJobs.length} jobs in pipeline`);
+        }, 1500);
       }
     } catch { /* server might be restarting */ }
   }, 1500);
@@ -1742,11 +1747,6 @@ function stopLogPolling() {
   if (logPoller) { clearInterval(logPoller); logPoller = null; }
 }
 
-async function reloadJobs() {
-  closeModal();
-  await loadJobs();
-  toast('Jobs reloaded ✓');
-}
 
 // ── Profile management ──────────────────────────────
 async function loadProfiles() {
