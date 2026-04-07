@@ -2067,11 +2067,14 @@ function showLoginScreen(message) {
     + msg
     + '<div style="display:flex;flex-direction:column;gap:12px;">'
     +   '<input id="auth-email" class="field-input" type="email" placeholder="Email address" style="font-size:14px;padding:12px;">'
-    +   '<input id="auth-password" class="field-input" type="password" placeholder="Password (min 6 chars)" style="font-size:14px;padding:12px;">'
+    +   '<input id="auth-password" class="field-input" type="password" placeholder="Password" style="font-size:14px;padding:12px;">'
     +   '<button class="save-btn" onclick="loginWithPassword()" style="padding:12px;">Sign In</button>'
-    +   '<button class="save-btn" onclick="signupWithPassword()" style="padding:12px;background:transparent;color:var(--gold);border:1px solid var(--gold-dim);">Create Account</button>'
     + '</div>'
-    + '<div style="font-size:11px;color:var(--text-muted);margin-top:16px;line-height:1.6;">Sign in or create an account. Your jobs and profile are private to you.</div>'
+    + '<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">'
+    +   '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Don\\'t have an account?</div>'
+    +   '<a href="mailto:vishal@idyeah.studio?subject=Apex%20%E2%80%94%20Request%20Access&body=Hi%20Vishal%2C%0A%0AI%E2%80%99d%20like%20access%20to%20Apex.%0A%0AName%3A%20%0ALinkedIn%3A%20%0A%0AThanks!" class="save-btn" style="padding:12px;background:transparent;color:var(--gold);border:1px solid var(--gold-dim);display:block;text-align:center;text-decoration:none;border-radius:var(--radius);font-family:\'Geist\',sans-serif;font-size:13px;font-weight:500;">Request Access</a>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-top:16px;line-height:1.6;">Access is granted within 24 hours. Free for 30 days.</div>'
     + '<a href="/privacy" target="_blank" style="font-size:10px;color:var(--text-muted);margin-top:12px;display:inline-block;text-decoration:none;letter-spacing:0.06em;">Privacy Policy</a>'
     + '</div>';
 
@@ -2102,57 +2105,37 @@ async function loginWithPassword() {
   }
 }
 
-async function signupWithPassword() {
-  var email = document.getElementById('auth-email').value.trim();
-  var password = document.getElementById('auth-password').value;
-  if (!email || !password) { toast('Enter email and password', true); return; }
-  if (password.length < 6) { toast('Password must be at least 6 characters', true); return; }
-
-  try {
-    var data = await apiNoAuth('/api/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email: email, password: password }),
-    });
-    if (data && data.access_token) {
-      // Auto-confirmed — log in directly
-      setTokens(data.access_token, data.refresh_token);
-      localStorage.setItem('apex_user_email', email);
-      enterApp();
-    } else if (data && data.id) {
-      // Email confirmation required
-      showLoginScreen('Check your email for a confirmation link, then sign in.');
-    } else {
-      toast('Signup failed', true);
-    }
-  } catch (e) {
-    toast(e.message, true);
-  }
-}
-
 async function enterApp() {
-  document.getElementById('profile-picker').style.display = 'none';
-  document.querySelector('.sidebar').style.display = '';
-  document.querySelector('.main').style.display = '';
-
-  // Load or create profile
+  // Load or create profile, check expiry
   try {
     var p = await api('/api/me/profile');
     if (p && p.id) {
+      // Check if account has expired
+      if (p.expires_at && new Date(p.expires_at) < new Date()) {
+        clearTokens();
+        showLoginScreen('Your 30-day access has expired. Contact vishal@idyeah.studio to renew.');
+        return;
+      }
       currentProfileId = p.id;
       document.getElementById('profile-name-display').textContent = p.name || localStorage.getItem('apex_user_email') || '';
     } else {
       // First login — create profile
       var email = localStorage.getItem('apex_user_email') || '';
       var name = email.split('@')[0] || 'User';
-      await api('/api/me/profile', {
+      var created = await api('/api/me/profile', {
         method: 'POST',
         body: JSON.stringify({ name: name }),
       });
+      if (created) currentProfileId = created.id;
       document.getElementById('profile-name-display').textContent = name;
     }
   } catch (e) {
     console.warn('Profile load error:', e);
   }
+
+  document.getElementById('profile-picker').style.display = 'none';
+  document.querySelector('.sidebar').style.display = '';
+  document.querySelector('.main').style.display = '';
 
   loadProfileSettings();
   loadJobs();

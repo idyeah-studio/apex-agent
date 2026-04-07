@@ -17,7 +17,8 @@ create table if not exists profiles (
   score_threshold integer default 62,
   min_salary      integer default 0,
   linkedin_li_at  text,
-  created_at      timestamptz default now()
+  created_at      timestamptz default now(),
+  expires_at      timestamptz default (now() + interval '30 days')
 );
 
 -- ── Jobs (scoped to profile) ──────────────────────
