@@ -80,7 +80,7 @@ def score_job(job: dict, profile: dict) -> dict:
 
     try:
         response = _client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-sonnet-4-6",
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )
